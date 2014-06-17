@@ -4,7 +4,8 @@ MPITESTS = indicestest                            \
            indexsettest                           \
            syncertest                             \
            selectiontest                          \
-           variablesizecommunicatortest
+           variablesizecommunicatortest		  \
+	   paralleltest
 
 # which tests where program to build and run are equal
 NORMALTESTS =
@@ -60,6 +61,18 @@ variablesizecommunicatortest_LDADD =                                   \
 	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
 	$(DUNEMPILIBS)                                                 \
 	$(LDADD)
+
+paralleltest_SOURCES = paralleltest.cc
+paralleltest_CPPFLAGS = $(AM_CPPFLAGS)                 		       \
+        $(DUNEMPICPPFLAGS)                                             \
+        $(DUNE_COMMON_CPPFLAGS)
+paralleltest_LDFLAGS = $(AM_LDFLAGS)                   		       \
+        $(DUNEMPILDFLAGS)                                              \
+        $(DUNE_COMMON_LDFLAGS)
+paralleltest_LDADD =                                   		       \
+        $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
+        $(DUNEMPILIBS)                                                 \
+        $(LDADD)
 
 include $(top_srcdir)/am/global-rules
 
