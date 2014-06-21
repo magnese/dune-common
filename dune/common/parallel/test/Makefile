@@ -144,7 +144,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 =
 am__EXEEXT_2 = indicestest$(EXEEXT) indexsettest$(EXEEXT) \
 	syncertest$(EXEEXT) selectiontest$(EXEEXT) \
-	variablesizecommunicatortest$(EXEEXT) paralleltest$(EXEEXT)
+	variablesizecommunicatortest$(EXEEXT) paralleltest$(EXEEXT) \
+	threadstest$(EXEEXT)
 am_indexsettest_OBJECTS = indexsettest.$(OBJEXT)
 indexsettest_OBJECTS = $(am_indexsettest_OBJECTS)
 indexsettest_LDADD = $(LDADD)
@@ -181,6 +182,12 @@ syncertest_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 syncertest_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(syncertest_LDFLAGS) $(LDFLAGS) -o $@
+am_threadstest_OBJECTS = threadstest-threadstest.$(OBJEXT)
+threadstest_OBJECTS = $(am_threadstest_OBJECTS)
+threadstest_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+threadstest_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(threadstest_LDFLAGS) $(LDFLAGS) -o $@
 am_variablesizecommunicatortest_OBJECTS = variablesizecommunicatortest-variablesizecommunicatortest.$(OBJEXT)
 variablesizecommunicatortest_OBJECTS =  \
 	$(am_variablesizecommunicatortest_OBJECTS)
@@ -226,10 +233,12 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(indexsettest_SOURCES) $(indicestest_SOURCES) \
 	$(paralleltest_SOURCES) $(selectiontest_SOURCES) \
-	$(syncertest_SOURCES) $(variablesizecommunicatortest_SOURCES)
+	$(syncertest_SOURCES) $(threadstest_SOURCES) \
+	$(variablesizecommunicatortest_SOURCES)
 DIST_SOURCES = $(indexsettest_SOURCES) $(indicestest_SOURCES) \
 	$(paralleltest_SOURCES) $(selectiontest_SOURCES) \
-	$(syncertest_SOURCES) $(variablesizecommunicatortest_SOURCES)
+	$(syncertest_SOURCES) $(threadstest_SOURCES) \
+	$(variablesizecommunicatortest_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -645,7 +654,8 @@ MPITESTS = indicestest                            \
            syncertest                             \
            selectiontest                          \
            variablesizecommunicatortest		  \
-	   paralleltest
+	   paralleltest				  \
+	   threadstest
 
 
 # which tests where program to build and run are equal
@@ -706,7 +716,7 @@ variablesizecommunicatortest_LDADD = \
 paralleltest_SOURCES = paralleltest.cc
 paralleltest_CPPFLAGS = $(AM_CPPFLAGS)                 		       \
         $(DUNEMPICPPFLAGS)                                             \
-        $(DUNE_COMMON_CPPFLAGS) 				       
+        $(DUNE_COMMON_CPPFLAGS)
 
 paralleltest_LDFLAGS = $(AM_LDFLAGS)                   		       \
         $(DUNEMPILDFLAGS)                                              \
@@ -715,6 +725,20 @@ paralleltest_LDFLAGS = $(AM_LDFLAGS)                   		       \
 paralleltest_LDADD = \
         $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
         $(DUNEMPILIBS)                                                 \
+        $(LDADD)
+
+threadstest_SOURCES = threadstest.cc
+threadstest_CPPFLAGS = $(AM_CPPFLAGS)                                 \
+        $(DUNEMPICPPFLAGS)                                            \
+        $(DUNE_COMMON_CPPFLAGS)
+
+threadstest_LDFLAGS = $(AM_LDFLAGS)                                   \
+        $(DUNEMPILDFLAGS)                                             \
+        $(DUNE_COMMON_LDFLAGS)
+
+threadstest_LDADD = \
+        $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                    \
+        $(DUNEMPILIBS)                                                \
         $(LDADD)
 
 sourcescheck_IGNORE = aclocal.m4 dependencies.m4
@@ -798,6 +822,10 @@ syncertest$(EXEEXT): $(syncertest_OBJECTS) $(syncertest_DEPENDENCIES) $(EXTRA_sy
 	@rm -f syncertest$(EXEEXT)
 	$(AM_V_CXXLD)$(syncertest_LINK) $(syncertest_OBJECTS) $(syncertest_LDADD) $(LIBS)
 
+threadstest$(EXEEXT): $(threadstest_OBJECTS) $(threadstest_DEPENDENCIES) $(EXTRA_threadstest_DEPENDENCIES) 
+	@rm -f threadstest$(EXEEXT)
+	$(AM_V_CXXLD)$(threadstest_LINK) $(threadstest_OBJECTS) $(threadstest_LDADD) $(LIBS)
+
 variablesizecommunicatortest$(EXEEXT): $(variablesizecommunicatortest_OBJECTS) $(variablesizecommunicatortest_DEPENDENCIES) $(EXTRA_variablesizecommunicatortest_DEPENDENCIES) 
 	@rm -f variablesizecommunicatortest$(EXEEXT)
 	$(AM_V_CXXLD)$(variablesizecommunicatortest_LINK) $(variablesizecommunicatortest_OBJECTS) $(variablesizecommunicatortest_LDADD) $(LIBS)
@@ -813,6 +841,7 @@ include ./$(DEPDIR)/indicestest-indicestest.Po
 include ./$(DEPDIR)/paralleltest-paralleltest.Po
 include ./$(DEPDIR)/selectiontest-selectiontest.Po
 include ./$(DEPDIR)/syncertest-syncertest.Po
+include ./$(DEPDIR)/threadstest-threadstest.Po
 include ./$(DEPDIR)/variablesizecommunicatortest-variablesizecommunicatortest.Po
 
 .cc.o:
@@ -891,6 +920,20 @@ syncertest-syncertest.obj: syncertest.cc
 #	$(AM_V_CXX)source='syncertest.cc' object='syncertest-syncertest.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
 #	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(syncertest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o syncertest-syncertest.obj `if test -f 'syncertest.cc'; then $(CYGPATH_W) 'syncertest.cc'; else $(CYGPATH_W) '$(srcdir)/syncertest.cc'; fi`
+
+threadstest-threadstest.o: threadstest.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(threadstest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT threadstest-threadstest.o -MD -MP -MF $(DEPDIR)/threadstest-threadstest.Tpo -c -o threadstest-threadstest.o `test -f 'threadstest.cc' || echo '$(srcdir)/'`threadstest.cc
+	$(AM_V_at)$(am__mv) $(DEPDIR)/threadstest-threadstest.Tpo $(DEPDIR)/threadstest-threadstest.Po
+#	$(AM_V_CXX)source='threadstest.cc' object='threadstest-threadstest.o' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(threadstest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o threadstest-threadstest.o `test -f 'threadstest.cc' || echo '$(srcdir)/'`threadstest.cc
+
+threadstest-threadstest.obj: threadstest.cc
+	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(threadstest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT threadstest-threadstest.obj -MD -MP -MF $(DEPDIR)/threadstest-threadstest.Tpo -c -o threadstest-threadstest.obj `if test -f 'threadstest.cc'; then $(CYGPATH_W) 'threadstest.cc'; else $(CYGPATH_W) '$(srcdir)/threadstest.cc'; fi`
+	$(AM_V_at)$(am__mv) $(DEPDIR)/threadstest-threadstest.Tpo $(DEPDIR)/threadstest-threadstest.Po
+#	$(AM_V_CXX)source='threadstest.cc' object='threadstest-threadstest.obj' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) \
+#	$(AM_V_CXX_no)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(threadstest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o threadstest-threadstest.obj `if test -f 'threadstest.cc'; then $(CYGPATH_W) 'threadstest.cc'; else $(CYGPATH_W) '$(srcdir)/threadstest.cc'; fi`
 
 variablesizecommunicatortest-variablesizecommunicatortest.o: variablesizecommunicatortest.cc
 	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(variablesizecommunicatortest_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT variablesizecommunicatortest-variablesizecommunicatortest.o -MD -MP -MF $(DEPDIR)/variablesizecommunicatortest-variablesizecommunicatortest.Tpo -c -o variablesizecommunicatortest-variablesizecommunicatortest.o `test -f 'variablesizecommunicatortest.cc' || echo '$(srcdir)/'`variablesizecommunicatortest.cc
@@ -1143,6 +1186,13 @@ variablesizecommunicatortest.log: variablesizecommunicatortest$(EXEEXT)
 paralleltest.log: paralleltest$(EXEEXT)
 	@p='paralleltest$(EXEEXT)'; \
 	b='paralleltest'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+threadstest.log: threadstest$(EXEEXT)
+	@p='threadstest$(EXEEXT)'; \
+	b='threadstest'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
