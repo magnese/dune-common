@@ -495,7 +495,7 @@ CPPFLAGS =
 CXX = g++ -std=c++11
 CXXCPP = g++ -E -std=c++11
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -O3 -Wall -DNDEBUG -funroll-loops -finline-functions -fomit-frame-pointer -ffast-math -mfpmath=sse -msse3
+CXXFLAGS = -O3 -Wall -DNDEBUG -funroll-loops -finline-functions -pthread -fomit-frame-pointer -ffast-math -mfpmath=sse -msse3
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -580,7 +580,7 @@ PATH_SEPARATOR = :
 PERL = perl
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
-PKG_CONFIG_PATH = /home/ma/m/ma2413/dune-common-threads-repo
+PKG_CONFIG_PATH = /home/ma/m/ma2413/dune-common-threads-repo/
 RANLIB = ranlib
 REQUIRES = 
 SED = /bin/sed
