@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 #include <dune/common/fvector.hh>
 #include <dune/common/dynmatrix.hh>
@@ -15,7 +16,7 @@
 // exact solution x^2+1
 #define COOR_X0 0
 #define COOR_X1 1
-inline double f(double& x){return 2.0;}
+inline double f(double&& x){return 2.0;}
 double ux0(1.0);
 double ux1(2.0);
 
@@ -25,8 +26,53 @@ double ux1(2.0);
 #define DEBUG_THREADS_TEST 1
 
 // basis functions
-inline double phi0(double& x){return 1.0-x;}
-inline double phi1(double& x){return x;}
+inline double phi0(double&& x){return 1.0-x;}
+inline double phi1(double&& x){return x;}
+inline double derphi0(double&& x){return -1.0;}
+inline double derphi1(double&& x){return 1.0;}
+
+// assemble function
+template<typename AType,typename bType,typename IType,typename GType,typename FType>
+void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned int numGridElements,FType& phi,FType& derphi){
+
+    std::vector<std::vector<double>> Alocal(2,std::vector<double>(2,0.0));
+    std::vector<double> blocal(2,0.0);
+
+    unsigned int startElem(tid*numGridElements);
+    unsigned int endElem((tid+1)*numGridElements);
+    for(unsigned int elem=startElem;elem!=endElem;++elem){
+
+        // assemble local A and local b
+        for(unsigned int i=0;i!=2;++i){
+
+            blocal[i]=0.0;
+            // using trapezoid rule
+            blocal[i]+=0.5*(phi[i](0.0)*f(0.0));
+            blocal[i]+=0.5*(phi[i](1.0)*f(1.0));
+            blocal[i]*=(grid[elem+1]-grid[elem]);
+
+            for(unsigned int j=0;j!=2;++j){
+                Alocal[i][j]=0.0;
+                // using trapezoid rule
+                Alocal[i][j]+=0.5*(derphi[i](0.0)*derphi[j](0.0));
+                Alocal[i][j]+=0.5*(derphi[i](1.0)*derphi[j](1.0));
+                Alocal[i][j]/=(grid[elem+1]-grid[elem]);
+            }
+
+        }
+
+        // adding local A and local b to the global stiffness matrix and the global RHS
+        for(unsigned int i=0;i!=2;++i){
+            b[elem+i]+=blocal[i];
+            for(unsigned int j=0;j!=2;++j){
+                A[elem+i][elem+j]+=Alocal[i][j];
+            }
+        }
+
+    }
+
+}
+
 
 int main(void){
 
@@ -99,11 +145,23 @@ int main(void){
     VectorType b(numNodes,0.0);
     VectorType x(numNodes,0.0);
 
-    //values first derivative basis function
-    double derphi0(-1.0);
-    double derphi1(1.0);
+    // basis functions
+    typedef std::function<double(double&&)> FunctionType;
+
+    std::vector<FunctionType> phi(2);
+    phi[0]=phi0; // phi[0]([](double& x)->double{return 1.0-x;});
+    phi[1]=phi1; // phi[1]([](double& x)->double{return x;});
+
+    std::vector<FunctionType> derphi(2);
+    derphi[0]=derphi0; // derphi[0]([](double& x)->double{return -1.0;});
+    derphi[1]=derphi1; // derphi[1]([](double& x)->double{return 1;});
 
     // assemble stiffness matrix and RHS
+    for(unsigned int i=0;i!=numThreads;++i) assemble(i,A,b,tit,grid,numGridElementsPerThread,phi,derphi);
+
+    // impose boundary condition
+    b[0]=ux0;
+    b[numNodes-1]=ux1;
 
 
     return 0;
