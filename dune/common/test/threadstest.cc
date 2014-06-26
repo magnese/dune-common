@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <functional>
 
+#include <thread>
+#include <mutex>
+
 #include <dune/common/fvector.hh>
 #include <dune/common/dynmatrix.hh>
 #include <dune/common/dynvector.hh>
@@ -31,6 +34,9 @@ inline double phi1(double&& x){return x;}
 inline double derphi0(double&& x){return -1.0;}
 inline double derphi1(double&& x){return 1.0;}
 
+// flag
+enum flags{shared,NOTshared};
+
 // assemble function
 template<typename AType,typename bType,typename IType,typename GType,typename FType>
 void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned int numGridElements,FType& phi,FType& derphi){
@@ -38,12 +44,12 @@ void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned
     std::vector<std::vector<double>> Alocal(2,std::vector<double>(2,0.0));
     std::vector<double> blocal(2,0.0);
 
-    unsigned int startElem(tid*numGridElements);
-    unsigned int endElem((tid+1)*numGridElements);
-    for(unsigned int elem=startElem;elem!=endElem;++elem){
+    size_t startElem(tid*numGridElements);
+    size_t endElem((tid+1)*numGridElements);
+    for(size_t elem=startElem;elem!=endElem;++elem){
 
         // assemble local A and local b
-        for(unsigned int i=0;i!=2;++i){
+        for(size_t i=0;i!=2;++i){
 
             blocal[i]=0.0;
             // using trapezoid rule
@@ -51,7 +57,7 @@ void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned
             blocal[i]+=0.5*(phi[i](1.0)*f(1.0));
             blocal[i]*=(grid[elem+1]-grid[elem]);
 
-            for(unsigned int j=0;j!=2;++j){
+            for(size_t j=0;j!=2;++j){
                 Alocal[i][j]=0.0;
                 // using trapezoid rule
                 Alocal[i][j]+=0.5*(derphi[i](0.0)*derphi[j](0.0));
@@ -62,17 +68,22 @@ void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned
         }
 
         // adding local A and local b to the global stiffness matrix and the global RHS
-        for(unsigned int i=0;i!=2;++i){
+        for(size_t i=0;i!=2;++i){
+            // possible critical section
+            if(idx[elem+i].first==shared) idx[elem+i].second->lock();
             b[elem+i]+=blocal[i];
-            for(unsigned int j=0;j!=2;++j){
+            for(size_t j=0;j!=2;++j){
+                // possible critical section
+                if(idx[elem+j].first==shared) idx[elem+j].second->lock();
                 A[elem+i][elem+j]+=Alocal[i][j];
+                if(idx[elem+j].first==shared) idx[elem+j].second->unlock();
             }
+            if(idx[elem+i].first==shared) idx[elem+i].second->unlock();
         }
 
     }
 
 }
-
 
 int main(void){
 
@@ -104,7 +115,8 @@ int main(void){
     unsigned int numNodes(numThreads*numGridElementsPerThread+1);
     CoordType x1x0Vector(x1-x0);
     double deltax(x1x0Vector.two_norm()/(numNodes-1));
-    std::vector<CoordType> grid(numNodes,x0);
+    typedef std::vector<CoordType> GridType;
+    GridType grid(numNodes,x0);
 
     for(size_t i=1;i!=numNodes;++i) grid[i]+=(deltax*i);
 
@@ -116,24 +128,24 @@ int main(void){
     #endif
     #endif
 
-    // set type of index
-    enum flags{shared,NOTshared};
-    typedef std::vector<flags> ThreadsIndexType;
-    ThreadsIndexType tit(numNodes,NOTshared);
+    // set type of index (one mutex for each shared part of the vector)
+    typedef std::vector<std::pair<flags,std::mutex*>> ThreadsIndexType;
+    ThreadsIndexType tit(numNodes,std::pair<flags,std::mutex*>(NOTshared,nullptr));
 
     for(size_t i=0;i!=(numThreads-1);++i){
-        tit[(i+1)*numGridElementsPerThread]=shared;
+        tit[(i+1)*numGridElementsPerThread].first=shared;
+        tit[(i+1)*numGridElementsPerThread].second=new std::mutex();
     }
 
     #ifdef DEBUG_THREADS_TEST
     #if DEBUG_THREADS_TEST
     std::cout<<"DEBUG: shared-NOTshared nodes"<<std::endl;
     for(ThreadsIndexType::iterator it=tit.begin();it!=(tit.end()-1);++it){
-        if(*it==NOTshared) std::cout<<"N--";
-        if(*it==shared) std::cout<<"S--";
+        if(it->first==NOTshared) std::cout<<"N--";
+        if(it->first==shared) std::cout<<"S--";
     }
-    if(*(tit.rbegin())==NOTshared) std::cout<<"N"<<std::endl<<std::endl;
-    if(*(tit.rbegin())==shared) std::cout<<"S"<<std::endl<<std::endl;
+    if((tit.rbegin())->first==NOTshared) std::cout<<"N"<<std::endl<<std::endl;
+    if((tit.rbegin())->first==shared) std::cout<<"S"<<std::endl<<std::endl;
     #endif
     #endif
 
@@ -156,13 +168,24 @@ int main(void){
     derphi[0]=derphi0; // derphi[0]([](double& x)->double{return -1.0;});
     derphi[1]=derphi1; // derphi[1]([](double& x)->double{return 1;});
 
-    // assemble stiffness matrix and RHS
-    for(unsigned int i=0;i!=numThreads;++i) assemble(i,A,b,tit,grid,numGridElementsPerThread,phi,derphi);
+    // launch a group of threads to assemble the stiffness matrix and the RHS
+    std::vector<std::thread> t(numThreads);
+
+    std::vector<double> vtest(10,0.0);
+    for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(assemble<StiffnessMatrixType,VectorType,ThreadsIndexType,GridType,std::vector<FunctionType>>,i,std::ref(A),std::ref(b),std::ref(tit),std::ref(grid),numGridElementsPerThread,std::ref(phi),std::ref(derphi));
+    for(size_t i=0;i!=numThreads;++i) t[i].join();
 
     // impose boundary condition
     b[0]=ux0;
     b[numNodes-1]=ux1;
 
+    // solve the problem
+    // TODO
+
+    // clean mutex
+    for(ThreadsIndexType::iterator it=tit.begin();it!=tit.end();++it){
+        if(it->first==shared) delete it->second;
+    }
 
     return 0;
 
