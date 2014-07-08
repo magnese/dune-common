@@ -9,7 +9,7 @@
 #include <functional>
 
 #include <thread>
-#include <mutex>
+//#include <mutex>
 
 #include <dune/common/fvector.hh>
 #include <dune/common/dynmatrix.hh>
@@ -17,8 +17,8 @@
 
 // problem definition
 // exact solution x^2+1
-#define COOR_X0 0
-#define COOR_X1 1
+#define COOR_X0 0.0
+#define COOR_X1 1.0
 inline double f(double&& x){return 2.0;}
 double ux0(1.0);
 double ux1(2.0);
@@ -39,48 +39,55 @@ enum flags{shared,NOTshared};
 
 // assemble function
 template<typename AType,typename bType,typename IType,typename GType,typename FType>
-void assemble(unsigned int tid,AType& A,bType& b,IType& idx,GType& grid,unsigned int numGridElements,FType& phi,FType& derphi){
+void assemble(unsigned int tid,AType& A_loc,bType& b_loc,IType& idx,GType& grid,unsigned int numGridElements,FType& phi,FType& derphi){
 
-    std::vector<std::vector<double>> Alocal(2,std::vector<double>(2,0.0));
-    std::vector<double> blocal(2,0.0);
+    std::vector<std::vector<double>> A_entity(2,std::vector<double>(2,0.0));
+    std::vector<double> b_entity(2,0.0);
 
     size_t startElem(tid*numGridElements);
     size_t endElem((tid+1)*numGridElements);
     for(size_t elem=startElem;elem!=endElem;++elem){
 
-        // assemble local A and local b
+        // assemble A_enity and b_entity
         for(size_t i=0;i!=2;++i){
 
-            blocal[i]=0.0;
+            b_entity[i]=0.0;
             // using trapezoid rule
-            blocal[i]+=0.5*(phi[i](0.0)*f(0.0));
-            blocal[i]+=0.5*(phi[i](1.0)*f(1.0));
-            blocal[i]*=(grid[elem+1]-grid[elem]);
+            b_entity[i]+=0.5*(phi[i](0.0)*f(0.0));
+            b_entity[i]+=0.5*(phi[i](1.0)*f(1.0));
+            b_entity[i]*=(grid[elem+1]-grid[elem]);
 
             for(size_t j=0;j!=2;++j){
-                Alocal[i][j]=0.0;
+                A_entity[i][j]=0.0;
                 // using trapezoid rule
-                Alocal[i][j]+=0.5*(derphi[i](0.0)*derphi[j](0.0));
-                Alocal[i][j]+=0.5*(derphi[i](1.0)*derphi[j](1.0));
-                Alocal[i][j]/=(grid[elem+1]-grid[elem]);
+                A_entity[i][j]+=0.5*(derphi[i](0.0)*derphi[j](0.0));
+                A_entity[i][j]+=0.5*(derphi[i](1.0)*derphi[j](1.0));
+                A_entity[i][j]/=(grid[elem+1]-grid[elem]);
             }
 
         }
 
-        // adding local A and local b to the global stiffness matrix and the global RHS
+        // add entity contributions to local A_loc and local b_loc
         for(size_t i=0;i!=2;++i){
-            // possible critical section
-            if(idx[elem+i].first==shared) idx[elem+i].second->lock();
-            b[elem+i]+=blocal[i];
+            b_loc[elem-startElem+i]+=b_entity[i];
             for(size_t j=0;j!=2;++j){
-                // possible critical section
-                if(idx[elem+j].first==shared) idx[elem+j].second->lock();
-                A[elem+i][elem+j]+=Alocal[i][j];
-                if(idx[elem+j].first==shared) idx[elem+j].second->unlock();
+                A_loc[elem-startElem+i][elem-startElem+j]+=A_entity[i][j];
             }
-            if(idx[elem+i].first==shared) idx[elem+i].second->unlock();
         }
 
+    }
+
+}
+
+// push function
+template<typename AType,typename bType>
+void push(unsigned int tid,AType& A_loc,bType& b_loc,AType& A,bType& b){
+
+    size_t size(b_loc.size());
+    size_t offset((size-1)*tid);
+    for(size_t i=0;i!=size;++i){
+        b[i+offset]+=b_loc[i];
+        for(size_t j=0;j!=size;++j) A[i+offset][j+offset]+=A_loc[i][j];
     }
 
 }
@@ -147,24 +154,41 @@ int main(void){
     #endif
     #endif
 
-    // set type of index (one mutex for each shared part of the vector)
-    typedef std::vector<std::pair<flags,std::recursive_mutex*>> ThreadsIndexType;
-    ThreadsIndexType tit(numNodes,std::pair<flags,std::recursive_mutex*>(NOTshared,nullptr));
+    // set type of index
+    typedef std::vector<flags> ThreadsIndexType;
+    ThreadsIndexType tit(numNodes,NOTshared);
 
-    for(size_t i=0;i!=(numThreads-1);++i){
-        tit[(i+1)*numGridElementsPerThread].first=shared;
-        tit[(i+1)*numGridElementsPerThread].second=new std::recursive_mutex();
-    }
+    for(size_t i=0;i!=(numThreads-1);++i) tit[(i+1)*numGridElementsPerThread]=shared;
 
     #ifdef DEBUG_THREADS_TEST
     #if DEBUG_THREADS_TEST
     std::cout<<"DEBUG: shared-NOTshared nodes"<<std::endl;
     for(ThreadsIndexType::iterator it=tit.begin();it!=(tit.end()-1);++it){
-        if(it->first==NOTshared) std::cout<<"N--";
-        if(it->first==shared) std::cout<<"S--";
+        if(*it==NOTshared) std::cout<<"N--";
+        if(*it==shared) std::cout<<"S--";
     }
-    if((tit.rbegin())->first==NOTshared) std::cout<<"N"<<std::endl<<std::endl;
-    if((tit.rbegin())->first==shared) std::cout<<"S"<<std::endl<<std::endl;
+    if(*(tit.rbegin())==NOTshared) std::cout<<"N"<<std::endl<<std::endl;
+    if(*(tit.rbegin())==shared) std::cout<<"S"<<std::endl<<std::endl;
+    #endif
+    #endif
+
+    // set color (each row contains all the thread with the same color)
+    unsigned int numColors(2); // 0 when tid is even, 1 when tid is odd
+    std::vector<std::vector<unsigned int>> colors(numColors);
+    for(size_t i=0;i!=2;++i){
+        colors[i].resize((numThreads+1*(1-i))/2);
+        for(size_t j=0;j!=colors[i].size();++j) colors[i][j]=j*2+1*i;
+    }
+
+    #ifdef DEBUG_THREADS_TEST
+    #if DEBUG_THREADS_TEST
+    std::cout<<"DEBUG: colors"<<std::endl;
+    for(std::vector<std::vector<unsigned int>>::iterator rowIt=colors.begin();rowIt!=colors.end();++rowIt){
+        std::cout<<"Threads which have color "<<rowIt-colors.begin()<<" : ";
+        for(std::vector<unsigned int>::iterator it=rowIt->begin();it!=rowIt->end();++it) std::cout<<*it<<" ";
+        std::cout<<std::endl;
+    }
+    std::cout<<std::endl;
     #endif
     #endif
 
@@ -175,6 +199,11 @@ int main(void){
     typedef Dune::DynamicVector<double> VectorType;
     VectorType b(numNodes,0.0);
     VectorType x(numNodes,0.0);
+
+    // allocate local stiffness matriices A_loc, local RHS vectors b_loc and local solution vectors x_loc; here local is referred to thread scope
+    std::vector<StiffnessMatrixType> A_loc(numThreads,StiffnessMatrixType(numGridElementsPerThread+1,numGridElementsPerThread+1,0.0));
+    std::vector<VectorType> b_loc(numThreads,VectorType(numGridElementsPerThread+1,0.0));
+    std::vector<VectorType> x_loc(numThreads,VectorType(numGridElementsPerThread+1,0.0));
 
     // basis functions
     typedef std::function<double(double&&)> FunctionType;
@@ -187,11 +216,17 @@ int main(void){
     derphi[0]=derphi0; // derphi[0]=[](double& x)->double{return -1.0;};
     derphi[1]=derphi1; // derphi[1]=[](double& x)->double{return 1;};
 
-    // launch a group of threads to assemble the stiffness matrix and the RHS
+    // launch a group of threads to assemble the local stiffness matrices and the local RHS vectors
     std::vector<std::thread> t(numThreads);
 
-    for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(assemble<StiffnessMatrixType,VectorType,ThreadsIndexType,GridType,std::vector<FunctionType>>,i,std::ref(A),std::ref(b),std::ref(tit),std::ref(grid),numGridElementsPerThread,std::ref(phi),std::ref(derphi));
+    for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(assemble<StiffnessMatrixType,VectorType,ThreadsIndexType,GridType,std::vector<FunctionType>>,i,std::ref(A_loc[i]),std::ref(b_loc[i]),std::ref(tit),std::ref(grid),numGridElementsPerThread,std::ref(phi),std::ref(derphi));
     for(size_t i=0;i!=numThreads;++i) t[i].join();
+
+    // launch a group of threads to update the global stiffness matrix and the global RHS with the valus stored in the local ones;
+    for(size_t i=0;i!=numColors;++i){
+        for(size_t j=0;j!=colors[i].size();++j) t[j]=std::thread(push<StiffnessMatrixType,VectorType>,colors[i][j],std::ref(A_loc[i]),std::ref(b_loc[i]),std::ref(A),std::ref(b));
+        for(size_t j=0;j!=colors[i].size();++j) t[j].join();
+    }
 
     // impose boundary condition
     A[0][0]=1;
@@ -220,11 +255,6 @@ int main(void){
     printVector(x);
     #endif
     #endif
-
-    // clean mutex
-    for(ThreadsIndexType::iterator it=tit.begin();it!=tit.end();++it){
-        if(it->first==shared) delete it->second;
-    }
 
     return 0;
 
