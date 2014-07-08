@@ -53,7 +53,8 @@ TESTPROGS = \
     tupleutilitytest \
     typetraitstest \
     utilitytest \
-    threadstest
+    threadstest \
+    threadstestcolor
 
 # which tests to run
 COMPILE_XFAIL=$(DUNE_COMMON_BIN)/xfail-compile-tests
@@ -254,6 +255,11 @@ threadstest_SOURCES = threadstest.cc
 threadstest_CPPFLAGS = $(AM_CPPFLAGS) $(DUNEMPICPPFLAGS)
 threadstest_LDADD = $(DUNEMPILIBS) $(LDADD)
 threadstest_LDFLAGS = $(AM_LDFLAGS) $(DUNEMPILDFLAGS)
+
+threadstestcolor_SOURCES = threadstestcolor.cc
+threadstestcolor_CPPFLAGS = $(AM_CPPFLAGS) $(DUNEMPICPPFLAGS)
+threadstestcolor_LDADD = $(DUNEMPILIBS) $(LDADD)
+threadstestcolor_LDFLAGS = $(AM_LDFLAGS) $(DUNEMPILDFLAGS)
 
 tuplestest_std_SOURCES = tuplestest.cc
 
