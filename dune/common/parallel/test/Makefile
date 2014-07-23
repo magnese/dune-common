@@ -484,8 +484,8 @@ AUTOMAKE = ${SHELL} /home/ma/m/ma2413/dune-common-threads-repo/missing automake-
 AWK = gawk
 BIBTEX = bibtex
 BLAS_LIBS = -lblas
-BOOST_CPPFLAGS = -I/include/boost-0
-BOOST_LDFLAGS = -L/lib64
+BOOST_CPPFLAGS = -I/usr/include -DENABLE_BOOST
+BOOST_LDFLAGS = -L/usr/lib64
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2 -Wall
