@@ -4,18 +4,17 @@ OPTIMFLAGS="$STDFLAGS -fomit-frame-pointer -ffast-math -mfpmath=sse -msse3"
 
 DEBUGFLAGS="-g -Wall"
 
-MODDIR="/usr/local_machine"
-
-MODULEFLAGS="--with-alberta=$MODDIR/alberta-3.0.0 \
-	     --with-alugrid=$MODDIR/alugrid-1.52 \
-	     --with-parmetis=$MODDIR/parmetis-4.0.3 \
-	     --with-metis=$MODDIR/parmetis-4.0.3 \
-	     --with-umfpack-includedir=$MODDIR/suitesparse-4.2.1/include \
-	     --with-umfpack-libdir=$MODDIR/suitesparse-4.2.1/lib "
+MODULEFLAGS="--with-alberta=$ALBERTA_DIR \
+	     --with-alugrid=$ALUGRID_DIR \
+	     --with-parmetis=$PARMETIS_DIR \
+	     --with-metis=$METIS_DIR \
+             --with-petsc=$PETSC_DIR \
+	     --with-umfpack-includedir=$SUITESPARSE_DIR/include \
+	     --with-umfpack-libdir=$SUITESPARSE_DIR/lib "
 
 COMPILER_FLAGS="CXX=g++ CC=gcc MPICXX=mpic++ MPICC=mpicc"
 
-CONFIGURE_FLAGS="--enable-parallel --enable-experimental-grid-extensions --disable-documentation \
+CONFIGURE_FLAGS="--enable-parallel --enable-documentation --enable-experimental-grid-extensions \
 		 $COMPILER_FLAGS CXXFLAGS=\"$OPTIMFLAGS\" $MODULEFLAGS"
 
 MAKE_FLAGS=
