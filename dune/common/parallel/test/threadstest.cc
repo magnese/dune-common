@@ -4,104 +4,108 @@
 
 #include <iostream>
 #include <vector>
-
 #include <thread>
 #include <mutex>
 
 #define NUM_THREADS 2
 
+//global mutex
 std::mutex mtx;
 
-void init_a(int tid,std::vector<int>& a){
+template<typename V>
+void init(size_t tid,V& v){
 
-    // start of the critical section
-    mtx.lock();
+  // start of the critical section
+  mtx.lock();
 
-    int offset(6*tid);
-    for(int i=offset;i!=(6+offset);++i) a[i]=i;
+  size_t offset(6*tid);
+  for(size_t i=offset;i!=(6+offset);++i) v[i]=i;
 
-    // output global vector
-    std::cout<<"Global vector after the call of init_a from thread "<<tid<<": a={ ";
-    for(std::vector<int>::iterator it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
-    std::cout<<"}"<<std::endl;
+  // output global vector
+  std::cout<<"[thread "<<tid<<"] vector after init(): ";
+  for(typename V::iterator it=v.begin();it!=v.end();++it) std::cout<<*it<<" ";
+  std::cout<<std::endl;
 
-    // end of the critical section
-    mtx.unlock();
-
-}
-
-void init_a_optimized(int tid,std::vector<int>& a){
-
-    int offset(6*tid);
-    for(int i=offset;i!=(6+offset);++i) a[i]=i;
-
-    // start of the critical section
-    mtx.lock();
-
-    // output global vector
-    std::cout<<"Global vector after the call of init_a_optimized from thread "<<tid<<": a={ ";
-    for(std::vector<int>::iterator it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
-    std::cout<<"}"<<std::endl;
-
-    // end of the critical section
-    mtx.unlock();
+  // end of the critical section
+  mtx.unlock();
 
 }
 
-void clear_a(int tid,std::vector<int>& a){
+template<typename V>
+void initOptimized(size_t tid,V& v){
 
-    int offset(6*tid);
-    for(int i=offset;i!=(6+offset);++i) a[i]=0;
+  size_t offset(6*tid);
+  for(size_t i=offset;i!=(6+offset);++i) v[i]=i;
+
+  // start of the critical section
+  mtx.lock();
+
+  // output global vector
+  std::cout<<"[thread "<<tid<<"] vector after initOptimized(): ";
+  for(typename V::iterator it=v.begin();it!=v.end();++it) std::cout<<*it<<" ";
+  std::cout<<std::endl;
+
+  // end of the critical section
+  mtx.unlock();
 
 }
 
-void oper_a(int tid,std::vector<int>& a){
+template<typename V>
+void clear(size_t tid,V& v){
+  size_t offset(6*tid);
+  for(size_t i=offset;i!=(6+offset);++i) v[i]=0;
+}
 
-    int offset(6*tid);
-    for(int i=offset;i!=(6+offset);++i) a[i]+=10*(tid+1);
-
+template<typename V>
+void oper(size_t tid,V& v){
+  size_t offset(6*tid);
+  for(size_t i=offset;i!=(6+offset);++i) v[i]+=10*(tid+1);
 }
 
 int main(int argc,char** argv){
 
-    // create global vector a
-    std::vector<int> a(12,0);
+  // create vector a
+  typedef int ctype;
+  typedef typename std::vector<ctype> VectorType;
+  VectorType a(12,0);
+  typedef typename VectorType::iterator VectorItType;
 
-    // launch a group of threads to fill the global vector a with init_a
-    std::vector<std::thread> t(NUM_THREADS);
+  // launch a group of threads to fill a with init()
+  const size_t numThreads(NUM_THREADS);
+  std::vector<std::thread> t(numThreads);
 
-    for(int i=0;i!=NUM_THREADS;++i) t[i]=std::thread(init_a,i,std::ref(a));
-    for(int i=0;i!=NUM_THREADS;++i) t[i].join();
+  for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(init<VectorType>,i,std::ref(a));
+  for(size_t i=0;i!=numThreads;++i) t[i].join();
 
-    // output global vector a
-    std::cout<<"Global vector on main thread: a={ ";
-    for(std::vector<int>::iterator it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
-    std::cout<<"}"<<std::endl<<std::endl;;
+  // output a
+  std::cout<<"[main] vector: ";
+  for(VectorItType it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
+  std::cout<<std::endl<<std::endl;;
 
-    // clear global vector a
-    std::cout<<"Clearing the global vector"<<std::endl<<std::endl;
-    for(int i=0;i!=NUM_THREADS;++i) t[i]=std::thread(clear_a,i,std::ref(a));
-    for(int i=0;i!=NUM_THREADS;++i) t[i].join();
+  // clear a with clear()
+  std::cout<<"Clearing the vector"<<std::endl<<std::endl;
+  for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(clear<VectorType>,i,std::ref(a));
+  for(size_t i=0;i!=numThreads;++i) t[i].join();
 
-    // launch a group of threads to fill the global vector a with init_a_optimized
-    for(int i=0;i!=NUM_THREADS;++i) t[i]=std::thread(init_a_optimized,i,std::ref(a));
-    for(int i=0;i!=NUM_THREADS;++i) t[i].join();
+  // launch a group of threads to fill a with initOptimized()
+  for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(initOptimized<VectorType>,i,std::ref(a));
+  for(size_t i=0;i!=numThreads;++i) t[i].join();
 
-    // output global vector a
-    std::cout<<"Global vector on main thread: a={ ";
-    for(std::vector<int>::iterator it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
-    std::cout<<"}"<<std::endl<<std::endl;
+  // output a
+  std::cout<<"[main] vector: ";
+  for(VectorItType it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
+  std::cout<<std::endl<<std::endl;
 
-    // do something on global vector a
-    std::cout<<"Performing the operation a[i]+=10*(thread_ID+1)"<<std::endl;
-    for(int i=0;i!=NUM_THREADS;++i) t[i]=std::thread(oper_a,i,std::ref(a));
-    for(int i=0;i!=NUM_THREADS;++i) t[i].join();
+  // do something a with oper()
+  std::cout<<"Performing the operation v[i]+=10*(ThreadID+1)"<<std::endl<<std::endl;
+  for(size_t i=0;i!=numThreads;++i) t[i]=std::thread(oper<VectorType>,i,std::ref(a));
+  for(size_t i=0;i!=numThreads;++i) t[i].join();
 
-    // output global vector a
-    std::cout<<"Global vector on main thread: a={ ";
-    for(std::vector<int>::iterator it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
-    std::cout<<"}"<<std::endl<<std::endl;
+  // output a
+  std::cout<<"[main] vector: ";
+  for(VectorItType it=a.begin();it!=a.end();++it) std::cout<<*it<<" ";
+  std::cout<<std::endl<<std::endl;
 
-    return 0;
+  return 0;
 
 }
