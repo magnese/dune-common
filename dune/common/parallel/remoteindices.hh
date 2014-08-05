@@ -72,8 +72,7 @@ namespace Dune {
 
     template<typename T, typename A, typename A1>
     friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T::GlobalIndex, typename T::LocalIndex::Attribute>,A> >&,
-                                         RemoteIndices<T,A1>&,
-                                         const T&);
+                                         RemoteIndices<T,A1>&, const T&);
 
     template<typename T, typename A, bool mode>
     friend class RemoteIndexListModifier;
