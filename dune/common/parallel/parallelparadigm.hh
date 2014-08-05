@@ -1,8 +1,8 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 // $Id$
-#ifndef DUNE_REMOTEINDICES_HH
-#define DUNE_REMOTEINDICES_HH
+#ifndef DUNE_PARALLELPARADIGM_HH
+#define DUNE_PARALLELPARADIGM_HH
 
 #include "indexset.hh"
 #include "plocalindex.hh"
@@ -10,7 +10,6 @@
 #include <dune/common/poolallocator.hh>
 #include <dune/common/sllist.hh>
 #include <dune/common/stdstreams.hh>
-#include <dune/common/parallel/parallelparadigm.hh> //TODO: to remove!
 #include <map>
 #include <set>
 #include <utility>
@@ -21,7 +20,7 @@
 #include "mpitraits.hh"
 #include <mpi.h>
 
-#define REMOTE_PART_TO_KEEP 0
+#define PARADIGM_PART_TO_KEEP 0
 
 namespace Dune {
   /** @addtogroup Common_Parallel
@@ -30,12 +29,11 @@ namespace Dune {
    */
   /**
    * @file
-   * @brief Classes describing a distributed indexset
+   * @brief Classes implementing different parallel paradigms.
    * @author Marco Agnese, Markus Blatt
    */
 
-#if REMOTE_PART_TO_KEEP
-  //! \todo Please doc me!
+  //! \todo Please doc me.
   template<typename TG, typename TA>
   class MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >
   {
@@ -44,8 +42,8 @@ namespace Dune {
   private:
     static MPI_Datatype type;
   };
-#endif
 
+#if PARADIGM_PART_TO_KEEP
   template<typename T, typename A>
   class RemoteIndices;
 
@@ -799,8 +797,8 @@ namespace Dune {
     Attribute attribute_;
     bool noattribute;
   };
+#endif
 
-#if REMOTE_PART_TO_KEEP
   template<typename TG, typename TA>
   MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::getType()
   {
@@ -823,8 +821,8 @@ namespace Dune {
 
   template<typename TG, typename TA>
   MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::type=MPI_DATATYPE_NULL;
-#endif
 
+#if PARADIGM_PART_TO_KEEP
   template<typename T1, typename T2>
   RemoteIndex<T1,T2>::RemoteIndex(const T2& attribute, const PairType* local) : localIndex_(local), attribute_(attribute)
   {}
@@ -1714,6 +1712,8 @@ namespace Dune {
     return os;
   }
   /** @} */
+#endif
+
 }
 
 #endif
