@@ -152,29 +152,34 @@ namespace Dune {
    * to be sent in a ring) or set up by hand using the
    * RemoteIndexListModifiers returned by function getModifier(int).
    *
-   * @tparam T The type of the underlying index set.
+   * @tparam T The type of the parallel paradigm to use.
    * @tparam A The type of the allocator to use.
    */
   template<class T, class A=std::allocator<RemoteIndex<typename T::GlobalIndex, typename T::LocalIndex::Attribute> > >
   class RemoteIndices
   {
+  public:
+    /** @brief Type of the parallel paradigm we use, e.g. MPIParadigm. */
+    typedef T ParallelParadigm;
+
+    /** @brief Type of the index set we use, e.g. ParallelLocalIndexSet. */
+    typedef typename ParallelParadigm::ParallelIndexSet ParallelIndexSet;
+
+  private:
     friend class InterfaceBuilder;
-    friend class IndicesSyncer<T>;
+    friend class IndicesSyncer<ParallelIndexSet>;
     template<typename T1, typename A2, typename A1>
     friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T1::GlobalIndex, typename T1::LocalIndex::Attribute>,A2> >&,
                                          RemoteIndices<T1,A1>&, const T1&);
 
     template<class G, class T1, class T2>
     friend void fillIndexSetHoles(const G& graph, Dune::OwnerOverlapCopyCommunication<T1,T2>& oocomm);
-    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&);
+    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&); // TODO: check if should have ParallelIndexSet instead of ParallelParadigm
 
   public:
 
-    /** @brief Type of the index set we use, e.g. ParallelLocalIndexSet. */
-    typedef T ParallelIndexSet;
-
     /** @brief The type of the collective iterator over all remote indices. */
-    typedef CollectiveIterator<T,A> CollectiveIteratorT;
+    typedef CollectiveIterator<ParallelIndexSet,A> CollectiveIteratorT; // TODO: check if should have ParallelIndexSet instead of ParallelParadigm
 
     /** @brief The type of the global index. */
     typedef typename ParallelIndexSet::GlobalIndex GlobalIndex;
@@ -307,7 +312,7 @@ namespace Dune {
      * be modified, if false the receiving side.
      */
     template<bool mode, bool send>
-    inline RemoteIndexListModifier<T,A,mode> getModifier(int process);
+    inline RemoteIndexListModifier<ParallelIndexSet,A,mode> getModifier(int process);
 
     /**
      * @brief Find an iterator over the remote index lists of a specific process.
@@ -1284,7 +1289,7 @@ namespace Dune {
 
   template<typename T, typename A>
   template<bool mode, bool send>
-  RemoteIndexListModifier<T,A,mode> RemoteIndices<T,A>::getModifier(int process)
+  RemoteIndexListModifier<typename RemoteIndices<T,A>::ParallelIndexSet,A,mode> RemoteIndices<T,A>::getModifier(int process)
   {
 
     // The user are on their own now!

@@ -95,7 +95,7 @@ int main(int argc,char** argv){
     ParallelParadigmType pp(MPI_COMM_WORLD);
 
     // set remote indices
-    typedef Dune::RemoteIndices<ParallelIndexType> RemoteIndicesType;
+    typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
     RemoteIndicesType riS(sis,sis,MPI_COMM_WORLD);
     riS.rebuild<true>();
 
