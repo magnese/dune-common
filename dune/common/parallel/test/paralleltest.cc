@@ -90,6 +90,10 @@ int main(int argc,char** argv){
       collCom.barrier();
     }
 
+    // create parallel paradigm
+    typedef Dune::MPIParadigm<ParallelIndexType> ParallelParadigmType;
+    ParallelParadigmType pp(MPI_COMM_WORLD);
+
     // set remote indices
     typedef Dune::RemoteIndices<ParallelIndexType> RemoteIndicesType;
     RemoteIndicesType riS(sis,sis,MPI_COMM_WORLD);

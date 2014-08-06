@@ -107,13 +107,15 @@ namespace Dune {
      */
     inline MPIParadigm(const MPI_Comm& comm);
 
-    MPIParadigm();
+    MPIParadigm()
+    {}
 
      /** @brief Set the communicator we work with. */
     inline void setCommunicator(const MPI_Comm& comm);
 
     /**  @brief Destructor. */
-    ~MPIParadigm();
+    ~MPIParadigm()
+    {}
 
     /** @brief Get the mpi communicator used. */
     inline MPI_Comm communicator() const;
@@ -172,9 +174,10 @@ namespace Dune {
      * @param postion The position in the buffer to start unpacking from.
      * @param bufferSize The size of the input buffer.
      */
+    template<class RemoteIndexList>
     inline void unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
                               MPI_Datatype type, int* positon, int bufferSize, bool fromOurself);
-
+    template<class RemoteIndexList>
     inline void unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries, PairType** localSource,
                               int localSourceEntries, PairType** localDest, int localDestEntries, char* p_in, MPI_Datatype type,
                               int* position, int bufferSize);
@@ -483,6 +486,7 @@ namespace Dune {
   }
 
   template<typename T>
+  template<typename RemoteIndexList>
   inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize, bool fromOurSelf)
   {
@@ -543,6 +547,7 @@ namespace Dune {
   }
 
   template<typename T>
+  template<typename RemoteIndexList>
   inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries,  PairType** localSource,
                                                 int localSourceEntries, PairType** localDest, int localDestEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize)
