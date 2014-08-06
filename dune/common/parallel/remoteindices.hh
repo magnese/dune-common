@@ -17,9 +17,9 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-#if HAVE_MPI
-#include "mpitraits.hh"
-#include <mpi.h>
+//#if HAVE_MPI
+//#include "mpitraits.hh"
+//#include <mpi.h>
 
 #define REMOTE_PART_TO_KEEP 0
 
@@ -33,18 +33,6 @@ namespace Dune {
    * @brief Classes describing a distributed indexset
    * @author Marco Agnese, Markus Blatt
    */
-
-#if REMOTE_PART_TO_KEEP
-  //! \todo Please doc me!
-  template<typename TG, typename TA>
-  class MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >
-  {
-  public:
-    inline static MPI_Datatype getType();
-  private:
-    static MPI_Datatype type;
-  };
-#endif
 
   template<typename T, typename A>
   class RemoteIndices;
@@ -798,31 +786,6 @@ namespace Dune {
     Attribute attribute_;
     bool noattribute;
   };
-
-#if REMOTE_PART_TO_KEEP
-  template<typename TG, typename TA>
-  MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::getType()
-  {
-    if(type==MPI_DATATYPE_NULL) {
-      int length[4];
-      MPI_Aint disp[4];
-      MPI_Datatype types[4] = {MPI_LB, MPITraits<TG>::getType(), MPITraits<ParallelLocalIndex<TA> >::getType(), MPI_UB};
-      IndexPair<TG,ParallelLocalIndex<TA> > rep[2];
-      length[0]=length[1]=length[2]=length[3]=1;
-      MPI_Address(rep, disp); // lower bound of the datatype
-      MPI_Address(&(rep[0].global_), disp+1);
-      MPI_Address(&(rep[0].local_), disp+2);
-      MPI_Address(rep+1, disp+3); // upper bound of the datatype
-      for(int i=3; i >= 0; --i) disp[i] -= disp[0];
-      MPI_Type_struct(4, length, disp, types, &type);
-      MPI_Type_commit(&type);
-    }
-    return type;
-  }
-
-  template<typename TG, typename TA>
-  MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::type=MPI_DATATYPE_NULL;
-#endif
 
   template<typename T1, typename T2>
   RemoteIndex<T1,T2>::RemoteIndex(const T2& attribute, const PairType* local) : localIndex_(local), attribute_(attribute)
@@ -1715,5 +1678,5 @@ namespace Dune {
   /** @} */
 }
 
-#endif
+//#endif
 #endif
