@@ -44,8 +44,6 @@ namespace Dune {
     static MPI_Datatype type;
   };
 
-#if PARADIGM_PART_TO_KEEP
-
   //template<typename T, typename A>
   //class RemoteIndices;
 
@@ -106,203 +104,33 @@ namespace Dune {
     /**
      * @brief Constructor.
      * @param comm The communicator to use.
-     * @param source The indexset which represents the global to
-     * local mapping at the source of the communication
-     * @param destination The indexset to which the communication
-     * which represents the global to
-     * local mapping at the destination of the communication.
-     * May be the same as the source indexset.
-     * @param neighbours Optional: The neighbours the process shares indices with.
-     * If this parameter is omitted a ring communication with all indices will take
-     * place to calculate this information which is O(P).
-     * @param includeSelf If true, sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is used
-     * on both the
-     * sending and receiving side.
      */
-    inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
-                         const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
+    inline MPIParadigm(const MPI_Comm& comm);
 
-    RemoteIndices();
+    MPIParadigm();
 
-    /**
-     * @brief Tell whether sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is
-     * used on both the sending and receiving side.
-     *
-     * @param includeSelf If true it is enabled.
-     */
-    void setIncludeSelf(bool includeSelf);
-
-    /**
-     * @brief Set the index sets and communicator we work with.
-     *
-     * @warning All remote indices already setup will be deleted!
-     *
-     * @param comm The communicator to use.
-     * @param source The indexset which represents the global to
-     * local mapping at the source of the communication
-     * @param destination The indexset to which the communication
-     * which represents the global to
-     * local mapping at the destination of the communication.
-     * May be the same as the source indexset.
-     * @param neighbours Optional: The neighbours the process shares indices with.
-     * If this parameter is omitted a ring communication with all indices will take
-     * place to calculate this information which is O(P).
-     */
-    void setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
-                      const std::vector<int>& neighbours=std::vector<int>());
-
-    template<typename C>
-    void setNeighbours(const C& neighbours)
-    {
-      neighbourIds.clear();
-      neighbourIds.insert(neighbours.begin(), neighbours.end());
-
-    }
-
-    const std::set<int>& getNeighbours() const
-    {
-      return neighbourIds;
-    }
+     /** @brief Set the communicator we work with. */
+    inline void setCommunicator(const MPI_Comm& comm);
 
     /**  @brief Destructor. */
-    ~RemoteIndices();
-
-    /**
-     * @brief Rebuilds the set of remote indices.
-     *
-     * This has to be called whenever the underlying index sets
-     * change.
-     *
-     * If the template parameter ignorePublic is true all indices will be treated
-     * as public.
-     */
-    template<bool ignorePublic>
-    void rebuild();
-
-    bool operator==(const RemoteIndices& ri);
-
-    /**
-     * @brief Checks whether the remote indices are synced with
-     * the indexsets.
-     *
-     * If they are not synced the remote indices need to be rebuild.
-     * @return True if they are synced.
-     */
-    inline bool isSynced() const;
+    ~MPIParadigm();
 
     /** @brief Get the mpi communicator used. */
     inline MPI_Comm communicator() const;
 
-    /**
-     * @brief Get a modifier for a remote index list.
-     *
-     * Sometimes the user knows in advance which indices will be present
-     * on other processors, too. Then he can set them up using this modifier.
-     *
-     * @warning Use with care. If the remote index list is inconsistent
-     * after the modification the communication might result in a dead lock!
-     *
-     * @tparam mode If true the index set corresponding to the remote indices might get modified.
-     * Therefore the internal pointers to the indices need to be repaired.
-     * @tparam send If true the remote index information at the sending side will
-     * be modified, if false the receiving side.
-     */
-    template<bool mode, bool send>
-    inline RemoteIndexListModifier<T,A,mode> getModifier(int process);
-
-    /**
-     * @brief Find an iterator over the remote index lists of a specific process.
-     * @param proc The identifier of the process.
-     * @return The iterator the remote index lists postioned at the process.
-     * If theres is no list for this process, the end iterator is returned.
-     */
-    inline const_iterator find(int proc) const;
-
-    /**
-     * @brief Get an iterator over all remote index lists.
-     * @return The iterator over all remote index lists postioned at the first process.
-     */
-    inline const_iterator begin() const;
-
-    /**
-     * @brief Get an iterator over all remote index lists.
-     * @return The iterator over all remote index lists postioned at the end.
-     */
-    inline const_iterator end() const;
-
-    /**
-     * @brief Get an iterator for colletively iterating over the remote indices of all remote processes.
-     */
-    template<bool send>
-    inline CollectiveIteratorT iterator() const;
-
-    /** @brief Free the index lists. */
-    inline void free();
-
-    /**
-     * @brief Get the number of processors we share indices with.
-     * @return The number of neighbours.
-     */
-    inline int neighbours() const;
-
-    /** @brief Get the index set at the source. */
-    inline const ParallelIndexSet& sourceIndexSet() const;
-
-    /** @brief Get the index set at destination. */
-    inline const ParallelIndexSet& destinationIndexSet() const;
-
   private:
     /** copying is forbidden. */
-    RemoteIndices(const RemoteIndices&)
+    MPIParadigm(const MPIParadigm&)
     {}
-
-    /** @brief Index set used at the source of the communication. */
-    const ParallelIndexSet* source_;
-
-    /** @brief Index set used at the destination of the communication. */
-    const ParallelIndexSet* target_;
 
     /** @brief The communicator to use.*/
     MPI_Comm comm_;
 
-    /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
-    std::set<int> neighbourIds;
-
     /** @brief The communicator tag to use. */
     const static int commTag_=333;
 
-    /** @brief The sequence number of the source index set when the remote indices where build. */
-    int sourceSeqNo_;
-
-    /** @brief The sequence number of the destination index set when the remote indices where build. */
-    int destSeqNo_;
-
-    /** @brief Whether the public flag was ignored during the build. */
-    bool publicIgnored;
-
-    /** @brief Whether the next build will be the first build ever. */
-    bool firstBuild;
-
-    /*
-     * @brief If true, sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is used
-     * on both the
-     * sending and receiving side.
-     */
-    bool includeSelf;
-
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
-
-    /**
-     * @brief The remote indices.
-     *
-     * The key is the process id and the values are the pair of remote
-     * index lists, the first for receiving, the second for sending.
-     */
-    RemoteIndexMap remoteIndices_;
 
     /**
      * @brief Build the remote mapping.
@@ -311,18 +139,10 @@ namespace Dune {
      * as public.
      * @param includeSelf If true, sending from indices of the processor to other
      * indices on the same processor is enabled even if the same indexset is used
-     * on both the
-     * sending and receiving side.
+     * on both the sending and receiving side.
      */
     template<bool ignorePublic>
     inline void buildRemote(bool includeSelf);
-
-    /**
-     * @brief Count the number of public indices in an index set.
-     * @param indexSet The index set whose indices we count.
-     * @return the number of indices marked as public.
-     */
-    inline int noPublic(const ParallelIndexSet& indexSet);
 
     /**
      * @brief Pack the indices to send if source_ and target_ are the same.
@@ -365,8 +185,6 @@ namespace Dune {
 
   /** @} */
 
-#endif
-
   template<typename TG, typename TA>
   MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::getType()
   {
@@ -390,63 +208,29 @@ namespace Dune {
   template<typename TG, typename TA>
   MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::type=MPI_DATATYPE_NULL;
 
-#if PARADIGM_PART_TO_KEEP
-  template<typename T, typename A>
-  inline RemoteIndices<T,A>::RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
-                                           const std::vector<int>& neighbours, bool includeSelf_)  : source_(&source),
-                                           target_(&destination), comm_(comm), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
-                                           firstBuild(true), includeSelf(includeSelf_)
-  {
-    setNeighbours(neighbours);
-  }
-
-  template<typename T, typename A>
-  void RemoteIndices<T,A>::setIncludeSelf(bool b)
-  {
-    includeSelf=b;
-  }
-
-  template<typename T, typename A>
-  RemoteIndices<T,A>::RemoteIndices() : source_(0), target_(0), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false), firstBuild(true)
+  template<typename T>
+  inline MPIParadigm<T>::MPIParadigm(const MPI_Comm& comm) : comm_(comm)
   {}
 
-  template<class T, typename A>
-  void RemoteIndices<T,A>::setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
-                                        const std::vector<int>& neighbours)
+  template<typename T>
+  inline void MPIParadigm<T>::setCommunicator(const MPI_Comm& comm)
   {
-    free();
-    source_ = &source;
-    target_ = &destination;
     comm_ = comm;
-    firstBuild = true;
-    setNeighbours(neighbours);
   }
 
-  template<typename T, typename A>
-  const typename RemoteIndices<T,A>::ParallelIndexSet& RemoteIndices<T,A>::sourceIndexSet() const
+  template<typename T>
+  inline MPI_Comm MPIParadigm<T>::communicator() const
   {
-    return *source_;
+    return comm_;
   }
 
 
-  template<typename T, typename A>
-  const typename RemoteIndices<T,A>::ParallelIndexSet& RemoteIndices<T,A>::destinationIndexSet() const
-  {
-    return *target_;
-  }
-
-
-  template<typename T, typename A>
-  RemoteIndices<T,A>::~RemoteIndices()
-  {
-    free();
-  }
-
-  template<typename T, typename A>
+  template<typename T>
   template<bool ignorePublic>
-  inline void RemoteIndices<T,A>::packEntries(IndexPair<GlobalIndex,LocalIndex>** pairs, const ParallelIndexSet& indexSet, char* p_out,
+  inline void MPIParadigm<T>::packEntries(IndexPair<GlobalIndex,LocalIndex>** pairs, const ParallelIndexSet& indexSet, char* p_out,
                                               MPI_Datatype type, int bufferSize, int *position, int n)
   {
+#if PARADIGM_PART_TO_KEEP
     // fill with own indices
     typedef typename ParallelIndexSet::const_iterator const_iterator;
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
@@ -462,30 +246,14 @@ namespace Dune {
 
       }
     assert(i==n);
+#endif
   }
 
-  template<typename T, typename A>
-  inline int RemoteIndices<T,A>::noPublic(const ParallelIndexSet& indexSet)
-  {
-    typedef typename ParallelIndexSet::const_iterator const_iterator;
-
-    int noPublic=0;
-
-    const const_iterator end=indexSet.end();
-    for(const_iterator index=indexSet.begin(); index!=end; ++index)
-      if(index->local().isPublic())
-        noPublic++;
-
-    return noPublic;
-
-  }
-
-
-  template<typename T, typename A>
-  inline void RemoteIndices<T,A>::unpackCreateRemote(char* p_in, PairType** sourcePairs, PairType** destPairs, int remoteProc,
+  template<typename T>
+  inline void MPIParadigm<T>::unpackCreateRemote(char* p_in, PairType** sourcePairs, PairType** destPairs, int remoteProc,
                                                      int sourcePublish, int destPublish, int bufferSize, bool sendTwo, bool fromOurSelf)
   {
-
+#if PARADIGM_PART_TO_KEEP
     // unpack the number of indices we received
     int noRemoteSource=-1, noRemoteDest=-1;
     char twoIndexSets=0;
@@ -539,13 +307,14 @@ namespace Dune {
     }else{
       remoteIndices_.insert(std::make_pair(remoteProc, std::make_pair(send,receive)));
     }
+#endif
   }
 
-
-  template<typename T, typename A>
+  template<typename T>
   template<bool ignorePublic>
-  inline void RemoteIndices<T,A>::buildRemote(bool includeSelf)
+  inline void MPIParadigm<T>::buildRemote(bool includeSelf)
   {
+#if PARADIGM_PART_TO_KEEP
     // Processor configuration
     int rank, procs;
     MPI_Comm_rank(comm_, &rank);
@@ -710,12 +479,14 @@ namespace Dune {
     delete[] buffer[0];
     delete[] buffer[1];
     delete[] buffer;
+#endif
   }
 
-  template<typename T, typename A>
-  inline void RemoteIndices<T,A>::unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
+  template<typename T>
+  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize, bool fromOurSelf)
   {
+#if PARADIGM_PART_TO_KEEP
     if(remoteEntries==0)
       return;
 
@@ -768,14 +539,15 @@ namespace Dune {
     // Unpack the other received indices without doing anything
     while(++n_in < remoteEntries)
       MPI_Unpack(p_in, bufferSize, position, &index, 1, type, comm_);
+#endif
   }
 
-
-  template<typename T, typename A>
-  inline void RemoteIndices<T,A>::unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries,  PairType** localSource,
+  template<typename T>
+  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries,  PairType** localSource,
                                                 int localSourceEntries, PairType** localDest, int localDestEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize)
   {
+#if PARADIGM_PART_TO_KEEP
     int n_in=0, sourceIndex=0, destIndex=0;
 
     //Check if we know the global index
@@ -799,134 +571,10 @@ namespace Dune {
       if(destIndex < localDestEntries && localDest[destIndex]->global() == index.global())
         receive.push_back(RemoteIndex(index.local().attribute(), localDest[sourceIndex]));
     }
-
-  }
-
-  template<typename T, typename A>
-  inline void RemoteIndices<T,A>::free()
-  {
-    typedef typename RemoteIndexMap::iterator Iterator;
-    Iterator lend = remoteIndices_.end();
-    for(Iterator lists=remoteIndices_.begin(); lists != lend; ++lists) {
-      if(lists->second.first==lists->second.second) {
-        // there is only one remote index list.
-        delete lists->second.first;
-      }else{
-        delete lists->second.first;
-        delete lists->second.second;
-      }
-    }
-    remoteIndices_.clear();
-    firstBuild=true;
-  }
-
-  template<typename T, typename A>
-  inline int RemoteIndices<T,A>::neighbours() const
-  {
-    return remoteIndices_.size();
-  }
-
-  template<typename T, typename A>
-  template<bool ignorePublic>
-  inline void RemoteIndices<T,A>::rebuild()
-  {
-    // Test wether a rebuild is Needed.
-    if(firstBuild || ignorePublic!=publicIgnored || ! isSynced()) {
-      free();
-
-      buildRemote<ignorePublic>(includeSelf);
-
-      sourceSeqNo_ = source_->seqNo();
-      destSeqNo_ = target_->seqNo();
-      firstBuild=false;
-      publicIgnored=ignorePublic;
-    }
-
-
-  }
-
-  template<typename T, typename A>
-  inline bool RemoteIndices<T,A>::isSynced() const
-  {
-    return sourceSeqNo_==source_->seqNo() && destSeqNo_ ==target_->seqNo();
-  }
-
-  template<typename T, typename A>
-  template<bool mode, bool send>
-  RemoteIndexListModifier<T,A,mode> RemoteIndices<T,A>::getModifier(int process)
-  {
-
-    // The user are on their own now!
-    // We assume they know what they are doing and just set the
-    // remote indices to synced status.
-    sourceSeqNo_ = source_->seqNo();
-    destSeqNo_ = target_->seqNo();
-
-    typename RemoteIndexMap::iterator found = remoteIndices_.find(process);
-
-    if(found == remoteIndices_.end())
-    {
-      if(source_ != target_)
-        found = remoteIndices_.insert(found, std::make_pair(process, std::make_pair(new RemoteIndexList(), new RemoteIndexList())));
-      else{
-        RemoteIndexList* rlist = new RemoteIndexList();
-        found = remoteIndices_.insert(found, std::make_pair(process, std::make_pair(rlist, rlist)));
-      }
-    }
-
-    firstBuild = false;
-
-    if(send)
-      return RemoteIndexListModifier<T,A,mode>(*source_, *(found->second.first));
-    else
-      return RemoteIndexListModifier<T,A,mode>(*target_, *(found->second.second));
-  }
-
-  template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::find(int proc) const
-  {
-    return remoteIndices_.find(proc);
-  }
-
-  template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::begin() const
-  {
-    return remoteIndices_.begin();
-  }
-
-  template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::end() const
-  {
-    return remoteIndices_.end();
-  }
-
-
-  template<typename T, typename A>
-  bool RemoteIndices<T,A>::operator==(const RemoteIndices& ri)
-  {
-    if(neighbours()!=ri.neighbours())
-      return false;
-
-    typedef RemoteIndexList RList;
-    typedef typename std::map<int,std::pair<RList*,RList*> >::const_iterator const_iterator;
-
-    const const_iterator rend = remoteIndices_.end();
-
-    for(const_iterator rindex = remoteIndices_.begin(), rindex1=ri.remoteIndices_.begin(); rindex!=rend; ++rindex, ++rindex1) {
-      if(rindex->first != rindex1->first)
-        return false;
-      if(*(rindex->second.first) != *(rindex1->second.first))
-        return false;
-      if(*(rindex->second.second) != *(rindex1->second.second))
-        return false;
-    }
-    return true;
-  }
-  /** @} */
 #endif
+  }
+
+  /** @} */
 
 }
 
