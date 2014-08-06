@@ -1,3 +1,5 @@
+// Author: Marco Agnese
+
 #if HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -96,8 +98,11 @@ int main(int argc,char** argv){
 
     // set remote indices
     typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
-    RemoteIndicesType riS(sis,sis,MPI_COMM_WORLD);
+    RemoteIndicesType riS(sis,sis,pp);
     riS.rebuild<true>();
+
+    // output riS
+    std::cout<<riS<<std::endl;
 
     // create interface
     Dune::EnumItem<flags,ghost> ghostFlags;

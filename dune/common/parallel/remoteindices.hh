@@ -10,18 +10,18 @@
 #include <dune/common/poolallocator.hh>
 #include <dune/common/sllist.hh>
 #include <dune/common/stdstreams.hh>
-#include <dune/common/parallel/parallelparadigm.hh> //TODO: to remove!
+#include <dune/common/parallel/parallelparadigm.hh> //TODO: remove
 #include <map>
 #include <set>
 #include <utility>
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-//#if HAVE_MPI
-//#include "mpitraits.hh"
-//#include <mpi.h>
+//#if HAVE_MPI //TODO: remove
+//#include "mpitraits.hh" //TODO: remove
+//#include <mpi.h> //TODO: remove
 
-#define REMOTE_PART_TO_KEEP 0
+#define REMOTE_PART_TO_KEEP 0 //TODO: remove
 
 namespace Dune {
   /** @addtogroup Common_Parallel
@@ -174,12 +174,12 @@ namespace Dune {
 
     template<class G, class T1, class T2>
     friend void fillIndexSetHoles(const G& graph, Dune::OwnerOverlapCopyCommunication<T1,T2>& oocomm);
-    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&); // TODO: check if should have ParallelIndexSet instead of ParallelParadigm
+    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&); // TODO: check if should have ParallelIndexSet instead of ParallelParadigm and change
 
   public:
 
     /** @brief The type of the collective iterator over all remote indices. */
-    typedef CollectiveIterator<ParallelIndexSet,A> CollectiveIteratorT; // TODO: check if should have ParallelIndexSet instead of ParallelParadigm
+    typedef CollectiveIterator<ParallelIndexSet,A> CollectiveIteratorT;
 
     /** @brief The type of the global index. */
     typedef typename ParallelIndexSet::GlobalIndex GlobalIndex;
@@ -192,7 +192,6 @@ namespace Dune {
 
     /** @brief Type of the remote indices we manage. */
     typedef Dune::RemoteIndex<GlobalIndex,Attribute> RemoteIndex;
-
 
     /** @brief The type of the allocator for the remote index list. */
     typedef typename A::template rebind<RemoteIndex>::other Allocator;
@@ -207,7 +206,7 @@ namespace Dune {
 
     /**
      * @brief Constructor.
-     * @param comm The communicator to use.
+     * @param parallel The parallel paradigm to use.
      * @param source The indexset which represents the global to
      * local mapping at the source of the communication
      * @param destination The indexset to which the communication
@@ -222,7 +221,7 @@ namespace Dune {
      * on both the
      * sending and receiving side.
      */
-    inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
+    inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
                          const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
 
     RemoteIndices();
@@ -241,7 +240,7 @@ namespace Dune {
      *
      * @warning All remote indices already setup will be deleted!
      *
-     * @param comm The communicator to use.
+     * @param parallel The parallel paradigm to use.
      * @param source The indexset which represents the global to
      * local mapping at the source of the communication
      * @param destination The indexset to which the communication
@@ -252,7 +251,7 @@ namespace Dune {
      * If this parameter is omitted a ring communication with all indices will take
      * place to calculate this information which is O(P).
      */
-    void setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
+    void setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
                       const std::vector<int>& neighbours=std::vector<int>());
 
     template<typename C>
@@ -295,7 +294,10 @@ namespace Dune {
     inline bool isSynced() const;
 
     /** @brief Get the mpi communicator used. */
-    inline MPI_Comm communicator() const;
+    inline MPI_Comm communicator() const; //TODO: remove
+
+    /** @brief Get the parallel paradigm used. */
+    inline const ParallelParadigm& parallelParadigm() const;
 
     /**
      * @brief Get a modifier for a remote index list.
@@ -334,9 +336,7 @@ namespace Dune {
      */
     inline const_iterator end() const;
 
-    /**
-     * @brief Get an iterator for colletively iterating over the remote indices of all remote processes.
-     */
+    /** @brief Get an iterator for colletively iterating over the remote indices of all remote processes. */
     template<bool send>
     inline CollectiveIteratorT iterator() const;
 
@@ -366,14 +366,17 @@ namespace Dune {
     /** @brief Index set used at the destination of the communication. */
     const ParallelIndexSet* target_;
 
+    /** @brief Parallel paradigm used. */
+    ParallelParadigm& parallel_;
+
     /** @brief The communicator to use.*/
-    MPI_Comm comm_;
+    MPI_Comm comm_; //TODO: remove
 
     /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
     std::set<int> neighbourIds;
 
     /** @brief The communicator tag to use. */
-    const static int commTag_=333;
+    const static int commTag_=333; //TODO: remove
 
     /** @brief The sequence number of the source index set when the remote indices where build. */
     int sourceSeqNo_;
@@ -828,11 +831,12 @@ namespace Dune {
   }
 
   template<typename T, typename A>
-  inline RemoteIndices<T,A>::RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
+  inline RemoteIndices<T,A>::RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
                                            const std::vector<int>& neighbours, bool includeSelf_)  : source_(&source),
-                                           target_(&destination), comm_(comm), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
+                                           target_(&destination), parallel_(parallel), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
                                            firstBuild(true), includeSelf(includeSelf_)
   {
+    comm_ = parallel_.communicator(); // TODO: remove
     setNeighbours(neighbours);
   }
 
@@ -847,13 +851,14 @@ namespace Dune {
   {}
 
   template<class T, typename A>
-  void RemoteIndices<T,A>::setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, const MPI_Comm& comm,
+  void RemoteIndices<T,A>::setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
                                         const std::vector<int>& neighbours)
   {
     free();
     source_ = &source;
     target_ = &destination;
-    comm_ = comm;
+    parallel_= parallel; // TODO: remove
+    comm_ = parallel_.communicator();
     firstBuild = true;
     setNeighbours(neighbours);
   }
@@ -1319,6 +1324,12 @@ namespace Dune {
   }
 
   template<typename T, typename A>
+  inline const T& RemoteIndices<T,A>::parallelParadigm() const
+  {
+    return parallel_;
+  }
+
+  template<typename T, typename A>
   inline typename RemoteIndices<T,A>::const_iterator
   RemoteIndices<T,A>::find(int proc) const
   {
@@ -1657,7 +1668,7 @@ namespace Dune {
     const const_iterator rend = indices.remoteIndices_.end();
 
     for(const_iterator rindex = indices.remoteIndices_.begin(); rindex!=rend; ++rindex) {
-      os<<rank<<": Prozess "<<rindex->first<<":";
+      os<<rank<<": Process "<<rindex->first<<":";
 
       if(!rindex->second.first->empty()) {
         os<<" send:";
@@ -1669,7 +1680,7 @@ namespace Dune {
         os<<std::endl;
       }
       if(!rindex->second.second->empty()) {
-        os<<rank<<": Prozess "<<rindex->first<<": "<<"receive: ";
+        os<<rank<<": Process "<<rindex->first<<": "<<"receive: ";
 
         const typename RList::const_iterator rend= rindex->second.second->end();
 
@@ -1683,5 +1694,5 @@ namespace Dune {
   /** @} */
 }
 
-//#endif
+//#endif //TODO: remove
 #endif
