@@ -1,8 +1,8 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
 // $Id$
-#ifndef DUNE_PARALLELPARADIGM_HH
-#define DUNE_PARALLELPARADIGM_HH
+#ifndef DUNE_MPIPARALLELPARADIGM_HH
+#define DUNE_MPIPARALLELPARADIGM_HH
 
 #include "indexset.hh"
 #include "plocalindex.hh"
@@ -22,7 +22,7 @@ namespace Dune {
    */
   /**
    * @file
-   * @brief Classes implementing different parallel paradigms.
+   * @brief Classes implementing the MPI parallel paradigm.
    * @author Marco Agnese, Markus Blatt
    */
 
