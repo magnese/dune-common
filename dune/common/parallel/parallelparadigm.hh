@@ -50,6 +50,20 @@ namespace Dune {
   //class OwnerOverlapCopyCommunication;
 
 
+  //TODO: fucntion already presents as methods in remoteindices, fix this workaround!
+  template<class T>
+  inline int noPublic(const T& indexSet)
+  {
+    typedef typename T::const_iterator const_iterator;
+    int noPublic=0;
+    const const_iterator end=indexSet.end();
+    for(const_iterator index=indexSet.begin(); index!=end; ++index)
+      if(index->local().isPublic())
+        noPublic++;
+    return noPublic;
+  }
+
+
   /**
    * @brief MPIParadigm.
    *

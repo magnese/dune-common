@@ -373,7 +373,7 @@ namespace Dune {
     MPI_Comm comm_; //TODO: remove
 
     /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
-    std::set<int> neighbourIds;
+    std::set<int> neighbourIds; //TODO: put underscore
 
     /** @brief The communicator tag to use. */
     const static int commTag_=333; //TODO: remove
@@ -385,10 +385,10 @@ namespace Dune {
     int destSeqNo_;
 
     /** @brief Whether the public flag was ignored during the build. */
-    bool publicIgnored;
+    bool publicIgnored; //TODO: put underscore
 
     /** @brief Whether the next build will be the first build ever. */
-    bool firstBuild;
+    bool firstBuild; //TODO: put underscore
 
     /*
      * @brief If true, sending from indices of the processor to other
@@ -396,7 +396,7 @@ namespace Dune {
      * on both the
      * sending and receiving side.
      */
-    bool includeSelf;
+    bool includeSelf; //TODO: put underscore
 
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
@@ -1250,7 +1250,7 @@ namespace Dune {
     Iterator lend = remoteIndices_.end();
     for(Iterator lists=remoteIndices_.begin(); lists != lend; ++lists) {
       if(lists->second.first==lists->second.second) {
-        // there is only one remote index list.
+        // There is only one remote index list.
         delete lists->second.first;
       }else{
         delete lists->second.first;
@@ -1271,11 +1271,12 @@ namespace Dune {
   template<bool ignorePublic>
   inline void RemoteIndices<T,A>::rebuild()
   {
-    // Test wether a rebuild is Needed.
+    // test wether a rebuild is needed
     if(firstBuild || ignorePublic!=publicIgnored || ! isSynced()) {
       free();
 
-      buildRemote<ignorePublic>(includeSelf);
+      parallel_.buildRemote<ignorePublic,RemoteIndexList,RemoteIndexMap>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
+      //buildRemote<ignorePublic>(includeSelf); //TODO: remove
 
       sourceSeqNo_ = source_->seqNo();
       destSeqNo_ = target_->seqNo();
@@ -1297,9 +1298,7 @@ namespace Dune {
   RemoteIndexListModifier<typename RemoteIndices<T,A>::ParallelIndexSet,A,mode> RemoteIndices<T,A>::getModifier(int process)
   {
 
-    // The user are on their own now!
-    // We assume they know what they are doing and just set the
-    // remote indices to synced status.
+    // The user are on their own now! We assume they know what they are doing and just set the remote indices to synced status.
     sourceSeqNo_ = source_->seqNo();
     destSeqNo_ = target_->seqNo();
 
@@ -1357,9 +1356,7 @@ namespace Dune {
     if(neighbours()!=ri.neighbours())
       return false;
 
-    typedef RemoteIndexList RList;
-    typedef typename std::map<int,std::pair<RList*,RList*> >::const_iterator const_iterator;
-
+    typedef typename std::map<int,std::pair<RemoteIndexList*,RemoteIndexList*> >::const_iterator const_iterator;
     const const_iterator rend = remoteIndices_.end();
 
     for(const_iterator rindex = remoteIndices_.begin(), rindex1=ri.remoteIndices_.begin(); rindex!=rend; ++rindex, ++rindex1) {
