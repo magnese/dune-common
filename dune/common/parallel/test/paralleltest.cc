@@ -12,10 +12,10 @@
 #include <dune/common/parallel/mpicollectivecommunication.hh>
 #include <dune/common/parallel/indexset.hh>
 #include <dune/common/parallel/plocalindex.hh>
+#include <dune/common/parallel/parallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
 #include <dune/common/parallel/communicator.hh>
-#include <dune/common/parallel/parallelparadigm.hh>
 
 // policy: copy
 template<typename T>
@@ -102,7 +102,13 @@ int main(int argc,char** argv){
     riS.rebuild<true>();
 
     // output riS
-    std::cout<<riS<<std::endl;
+    for(size_t i=0;i!=size;++i){
+      if(rank==i){
+        std::cout<<"ris"<<rank<<":"<<std::endl;
+        std::cout<<riS<<std::endl;
+      }
+      collCom.barrier();
+    }
 
     // create interface
     Dune::EnumItem<flags,ghost> ghostFlags;
