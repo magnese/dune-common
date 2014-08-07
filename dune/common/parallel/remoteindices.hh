@@ -391,10 +391,6 @@ namespace Dune {
      */
     RemoteIndexMap remoteIndices_;
 
-    //TODO: need to be removed
-    template<bool ignorePublic>
-    inline void buildRemote(bool includeSelf);
-
     /**
      * @brief Count the number of public indices in an index set.
      * @param indexSet The index set whose indices we count.
@@ -850,7 +846,7 @@ namespace Dune {
     if(firstBuild || ignorePublic!=publicIgnored || ! isSynced()) {
       free();
 
-      parallel_.buildRemote<ignorePublic,RemoteIndexList,RemoteIndexMap>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
+      parallel_.template buildRemote<ignorePublic,RemoteIndexList,RemoteIndexMap>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
 
       sourceSeqNo_ = source_->seqNo();
       destSeqNo_ = target_->seqNo();
