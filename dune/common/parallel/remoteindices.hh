@@ -10,14 +10,12 @@
 #include <dune/common/poolallocator.hh>
 #include <dune/common/sllist.hh>
 #include <dune/common/stdstreams.hh>
-#include <dune/common/parallel/parallelparadigm.hh> //TODO: remove
 #include <map>
 #include <set>
 #include <utility>
 #include <iostream>
 #include <algorithm>
 #include <iterator>
-
 
 namespace Dune {
   /** @addtogroup Common_Parallel
@@ -167,7 +165,7 @@ namespace Dune {
 
     template<class G, class T1, class T2>
     friend void fillIndexSetHoles(const G& graph, Dune::OwnerOverlapCopyCommunication<T1,T2>& oocomm);
-    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&); // TODO: check if should have ParallelIndexSet instead of ParallelParadigm and change
+    friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&);
 
   public:
 
@@ -362,9 +360,6 @@ namespace Dune {
 
     /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
     std::set<int> neighbourIds; //TODO: put underscore
-
-    /** @brief The communicator tag to use. */
-    const static int commTag_=333; //TODO: remove
 
     /** @brief The sequence number of the source index set when the remote indices where build. */
     int sourceSeqNo_;
@@ -1253,16 +1248,13 @@ namespace Dune {
   template<typename T, typename A>
   inline std::ostream& operator<<(std::ostream& os, const RemoteIndices<T,A>& indices)
   {
-    int rank;
-    MPI_Comm_rank(indices.communicator(), &rank);
-
     typedef typename RemoteIndices<T,A>::RemoteIndexList RList;
     typedef typename std::map<int,std::pair<RList*,RList*> >::const_iterator const_iterator;
 
     const const_iterator rend = indices.remoteIndices_.end();
 
     for(const_iterator rindex = indices.remoteIndices_.begin(); rindex!=rend; ++rindex) {
-      os<<rank<<": Process "<<rindex->first<<":";
+      os<<"Process "<<rindex->first<<":";
 
       if(!rindex->second.first->empty()) {
         os<<" send:";
@@ -1274,7 +1266,7 @@ namespace Dune {
         os<<std::endl;
       }
       if(!rindex->second.second->empty()) {
-        os<<rank<<": Process "<<rindex->first<<": "<<"receive: ";
+        os<<"Process "<<rindex->first<<": "<<"receive: ";
 
         const typename RList::const_iterator rend= rindex->second.second->end();
 
@@ -1288,5 +1280,4 @@ namespace Dune {
   /** @} */
 }
 
-//#endif //TODO: remove
 #endif
