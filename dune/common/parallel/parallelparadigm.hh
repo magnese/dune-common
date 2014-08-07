@@ -49,6 +49,8 @@ namespace Dune {
   //template<typename T1, typename T2> //TODO: remove
   //class OwnerOverlapCopyCommunication;
 
+  template<typename T,typename A>
+  class RemoteIndex; //TODO: would be nice to remove
 
   //TODO: fucntion already presents as methods in remoteindices, fix this workaround!
   template<class T>
@@ -516,7 +518,7 @@ namespace Dune {
         while(localIndex<localEntries && local[localIndex]->global()==index.global()) {
           if(!fromOurSelf || index.local().attribute() != local[localIndex]->local().attribute())
             // if index is from us it has to have a different attribute
-            remote.push_back(RemoteIndex(index.local().attribute(), local[localIndex]));
+            remote.push_back(RemoteIndex<GlobalIndex,Attribute>(index.local().attribute(), local[localIndex]));
           localIndex++;
         }
 
@@ -580,10 +582,10 @@ namespace Dune {
 
       // add a remote index if we found the global index
       if(sourceIndex<localSourceEntries && localSource[sourceIndex]->global()==index.global())
-        send.push_back(RemoteIndex(index.local().attribute(), localSource[sourceIndex]));
+        send.push_back(RemoteIndex<GlobalIndex,Attribute>(index.local().attribute(), localSource[sourceIndex]));
 
       if(destIndex < localDestEntries && localDest[destIndex]->global() == index.global())
-        receive.push_back(RemoteIndex(index.local().attribute(), localDest[sourceIndex]));
+        receive.push_back(RemoteIndex<GlobalIndex,Attribute>(index.local().attribute(), localDest[sourceIndex]));
     }
 
   }
