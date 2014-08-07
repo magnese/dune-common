@@ -43,7 +43,6 @@ namespace Dune {
   template<typename T, typename A, bool mode>
   class RemoteIndexListModifier;
 
-
   /** @brief Information about an index residing on another processor. */
   template<typename T1, typename T2>
   class RemoteIndex
@@ -129,7 +128,6 @@ namespace Dune {
   template<typename T1, typename T2>
   class OwnerOverlapCopyCommunication;
 
-
   /**
    * @brief The indices present on remote processes.
    *
@@ -164,7 +162,7 @@ namespace Dune {
                                          RemoteIndices<T1,A1>&, const T1&);
 
     template<class G, class T1, class T2>
-    friend void fillIndexSetHoles(const G& graph, Dune::OwnerOverlapCopyCommunication<T1,T2>& oocomm);
+    friend void fillIndexSetHoles(const G& graph, OwnerOverlapCopyCommunication<T1,T2>& oocomm);
     friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&);
 
   public:
@@ -188,14 +186,15 @@ namespace Dune {
     typedef typename A::template rebind<RemoteIndex>::other Allocator;
 
     /** @brief The type of the remote index list. */
-    typedef Dune::SLList<RemoteIndex,Allocator>  RemoteIndexList;
+    typedef SLList<RemoteIndex,Allocator>  RemoteIndexList;
 
     /** @brief The type of the map from rank to remote index list. */
     typedef std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> >  RemoteIndexMap;
 
     typedef typename RemoteIndexMap::const_iterator const_iterator;
 
-    typedef typename ParallelParadigm::CommType CommType; //TODO: need to be removed since not every paradigm has a communicator
+    //TODO: need to be removed since not every paradigm has a communicator
+    typedef typename ParallelParadigm::CommType CommType;
 
     /**
      * @brief Constructor.
@@ -282,8 +281,8 @@ namespace Dune {
      */
     inline bool isSynced() const;
 
-    /** @brief Get the mpi communicator used. */
-    inline CommType communicator() const; //TODO: remove
+    //TODO: need to be removed since not every paradigm has a communicator
+    inline CommType communicator() const;
 
     /** @brief Get the parallel paradigm used. */
     inline const ParallelParadigm& parallelParadigm() const;
@@ -359,7 +358,7 @@ namespace Dune {
     ParallelParadigm& parallel_;
 
     /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
-    std::set<int> neighbourIds; //TODO: put underscore
+    std::set<int> neighbourIds;
 
     /** @brief The sequence number of the source index set when the remote indices where build. */
     int sourceSeqNo_;
@@ -368,10 +367,10 @@ namespace Dune {
     int destSeqNo_;
 
     /** @brief Whether the public flag was ignored during the build. */
-    bool publicIgnored; //TODO: put underscore
+    bool publicIgnored;
 
     /** @brief Whether the next build will be the first build ever. */
-    bool firstBuild; //TODO: put underscore
+    bool firstBuild;
 
     /*
      * @brief If true, sending from indices of the processor to other
@@ -379,7 +378,7 @@ namespace Dune {
      * on both the
      * sending and receiving side.
      */
-    bool includeSelf; //TODO: put underscore
+    bool includeSelf;
 
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
@@ -392,16 +391,7 @@ namespace Dune {
      */
     RemoteIndexMap remoteIndices_;
 
-    /**
-     * @brief Build the remote mapping.
-     *
-     * If the template parameter ignorePublic is true all indices will be treated
-     * as public.
-     * @param includeSelf If true, sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is used
-     * on both the
-     * sending and receiving side.
-     */
+    //TODO: need to be removed
     template<bool ignorePublic>
     inline void buildRemote(bool includeSelf);
 
@@ -473,7 +463,7 @@ namespace Dune {
     typedef A Allocator;
 
     /** @brief The type of the remote index list. */
-    typedef Dune::SLList<RemoteIndex,Allocator> RemoteIndexList; //TODO: remove DUNE::
+    typedef SLList<RemoteIndex,Allocator> RemoteIndexList;
 
     /** @brief The type of the modifying iterator of the remote index list. */
     typedef SLListModifyIterator<RemoteIndex,Allocator> ModifyIterator;
@@ -495,7 +485,6 @@ namespace Dune {
      * the one before has bigger global index than the one to be inserted.
      */
     void insert(const RemoteIndex& index) throw(InvalidPosition);
-
 
     /**
      * @brief Insert an index to the list.
@@ -536,7 +525,6 @@ namespace Dune {
      */
     void repairLocalIndexPointers() throw(InvalidIndexSetState);
 
-
     RemoteIndexListModifier(const RemoteIndexListModifier&);
 
     /**
@@ -547,7 +535,6 @@ namespace Dune {
     {}
 
   private:
-
     /**
      * @brief Create a modifier for a remote index list.
      * @param indexSet The set of indices the process knows.
@@ -571,7 +558,6 @@ namespace Dune {
   template<class T, class A>
   class CollectiveIterator
   {
-
     /** @brief Type of the index set we use. */
     typedef T ParallelIndexSet;
 
@@ -591,13 +577,12 @@ namespace Dune {
     typedef typename A::template rebind<RemoteIndex>::other Allocator;
 
     /** @brief The type of the remote index list. */
-    typedef Dune::SLList<RemoteIndex,Allocator> RemoteIndexList;
+    typedef SLList<RemoteIndex,Allocator> RemoteIndexList;
 
     /** @brief The of map for storing the iterators. */
     typedef std::map<int,std::pair<typename RemoteIndexList::const_iterator, const typename RemoteIndexList::const_iterator> > Map;
 
   public:
-
     /** @brief The type of the map from rank to remote index list. */
     typedef std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > RemoteIndexMap;
 
@@ -805,20 +790,17 @@ namespace Dune {
     return *source_;
   }
 
-
   template<typename T, typename A>
   const typename RemoteIndices<T,A>::ParallelIndexSet& RemoteIndices<T,A>::destinationIndexSet() const
   {
     return *target_;
   }
 
-
   template<typename T, typename A>
   RemoteIndices<T,A>::~RemoteIndices()
   {
     free();
   }
-
 
   template<typename T, typename A>
   inline int RemoteIndices<T,A>::noPublic(const ParallelIndexSet& indexSet)
@@ -836,7 +818,6 @@ namespace Dune {
 
   }
 
-
   template<typename T, typename A>
   inline void RemoteIndices<T,A>::free()
   {
@@ -844,7 +825,7 @@ namespace Dune {
     Iterator lend = remoteIndices_.end();
     for(Iterator lists=remoteIndices_.begin(); lists != lend; ++lists) {
       if(lists->second.first==lists->second.second) {
-        // There is only one remote index list.
+        // there is only one remote index list
         delete lists->second.first;
       }else{
         delete lists->second.first;
@@ -877,7 +858,6 @@ namespace Dune {
       publicIgnored=ignorePublic;
     }
 
-
   }
 
   template<typename T, typename A>
@@ -891,7 +871,7 @@ namespace Dune {
   RemoteIndexListModifier<typename RemoteIndices<T,A>::ParallelIndexSet,A,mode> RemoteIndices<T,A>::getModifier(int process)
   {
 
-    // The user are on their own now! We assume they know what they are doing and just set the remote indices to synced status.
+    // the user are on their own now therefore we assume they know what they are doing and just set the remote indices to synced status
     sourceSeqNo_ = source_->seqNo();
     destSeqNo_ = target_->seqNo();
 
@@ -942,7 +922,6 @@ namespace Dune {
     return remoteIndices_.end();
   }
 
-
   template<typename T, typename A>
   bool RemoteIndices<T,A>::operator==(const RemoteIndices& ri)
   {
@@ -986,7 +965,7 @@ namespace Dune {
   inline void RemoteIndexListModifier<T,A,mode>::repairLocalIndexPointers() throw(InvalidIndexSetState)
   {
     if(MODIFYINDEXSET) {
-      // repair pointers to local index set.
+      // repair pointers to local index set
 #ifdef DUNE_ISTL_WITH_CHECKING
       if(indexSet_->state()!=GROUND)
         DUNE_THROW(InvalidIndexSetState, "Index has to be in ground mode for repairing pointers to indices");
@@ -1025,12 +1004,12 @@ namespace Dune {
     if(!first_ && index.localIndexPair().global()<last_)
       DUNE_THROW(InvalidPosition, "Modifcation of remote indices have to occur with ascending global index.");
 #endif
-    // Move to the correct position
+    // move to the correct position
     while(iter_ != end_ && iter_->localIndexPair().global() < index.localIndexPair().global()) {
       ++iter_;
     }
 
-    // No duplicate entries allowed
+    // no duplicate entries allowed
     assert(iter_==end_ || iter_->localIndexPair().global() != index.localIndexPair().global());
     iter_.insert(index);
     last_ = index.localIndexPair().global();
@@ -1046,13 +1025,13 @@ namespace Dune {
     if(!first_ && global<last_)
       DUNE_THROW(InvalidPosition, "Modification of remote indices have to occur with ascending global index.");
 #endif
-    // Move to the correct position
+    // move to the correct position
     while(iter_ != end_ && *giter_ < global) {
       ++giter_;
       ++iter_;
     }
 
-    // No duplicate entries allowed
+    // no duplicate entries allowed
     assert(iter_->localIndexPair().global() != global);
     iter_.insert(index);
     giter_.insert(global);
@@ -1072,7 +1051,7 @@ namespace Dune {
     bool found= false;
 
     if(MODIFYINDEXSET) {
-      // Move to the correct position
+      // move to the correct position
       while(iter_!=end_ && *giter_< global) {
         ++giter_;
         ++iter_;
@@ -1131,7 +1110,7 @@ namespace Dune {
     const const_iterator end = map_.end();
 
     for(iterator iter = map_.begin(); iter != end;) {
-      // Step the iterator until we are >= index
+      // step the iterator until we are >= index
       typename RemoteIndexList::const_iterator current = iter->second.first;
       typename RemoteIndexList::const_iterator rend = iter->second.second;
       RemoteIndex remoteIndex;
@@ -1160,14 +1139,14 @@ namespace Dune {
     const const_iterator end = map_.end();
 
     for(iterator iter = map_.begin(); iter != end;) {
-      // Step the iterator until we are >= index
+      // step the iterator until we are >= index
       typename RemoteIndexList::const_iterator current = iter->second.first;
       typename RemoteIndexList::const_iterator rend = iter->second.second;
       RemoteIndex remoteIndex;
       if(current != rend)
         remoteIndex = *current;
 
-      // Move to global index or bigger
+      // move to global index or bigger
       while(iter->second.first!=iter->second.second && iter->second.first->localIndexPair().global()<index)
         ++(iter->second.first);
 
@@ -1196,7 +1175,7 @@ namespace Dune {
     const const_iterator end = map_.end();
 
     for(iterator iter = map_.begin(); iter != end;) {
-      // Step the iterator until we are >= index
+      // step the iterator until we are >= index
       typename RemoteIndexList::const_iterator current = iter->second.first;
       typename RemoteIndexList::const_iterator rend = iter->second.second;
 
