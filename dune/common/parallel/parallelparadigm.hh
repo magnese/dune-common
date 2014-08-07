@@ -101,6 +101,9 @@ namespace Dune {
     /** @brief The type of the attribute. */
     typedef typename LocalIndex::Attribute Attribute;
 
+    /** @brief The type of the communicator. */
+    typedef MPI_Comm CommType;
+
     /** @brief Type of the remote indices we manage. */
     //typedef Dune::RemoteIndex<GlobalIndex,Attribute> RemoteIndex; //TODO: remove
 
@@ -119,20 +122,20 @@ namespace Dune {
      * @brief Constructor.
      * @param comm The communicator to use.
      */
-    inline MPIParadigm(const MPI_Comm& comm);
+    inline MPIParadigm(const CommType& comm);
 
     MPIParadigm()
     {}
 
      /** @brief Set the communicator we work with. */
-    inline void setCommunicator(const MPI_Comm& comm);
+    inline void setCommunicator(const CommType& comm);
 
     /**  @brief Destructor. */
     ~MPIParadigm()
     {}
 
     /** @brief Get the mpi communicator used. */
-    inline MPI_Comm communicator() const;
+    inline CommType communicator() const;
 
     //TODO: finish documentation
     /**
@@ -150,7 +153,7 @@ namespace Dune {
     {}
 
     /** @brief The communicator to use.*/
-    MPI_Comm comm_;
+    CommType comm_;
 
     /** @brief The communicator tag to use. */
     const static int commTag_=333;
@@ -224,17 +227,17 @@ namespace Dune {
   MPI_Datatype MPITraits<IndexPair<TG,ParallelLocalIndex<TA> > >::type=MPI_DATATYPE_NULL;
 
   template<typename T>
-  inline MPIParadigm<T>::MPIParadigm(const MPI_Comm& comm) : comm_(comm)
+  inline MPIParadigm<T>::MPIParadigm(const CommType& comm) : comm_(comm)
   {}
 
   template<typename T>
-  inline void MPIParadigm<T>::setCommunicator(const MPI_Comm& comm)
+  inline void MPIParadigm<T>::setCommunicator(const CommType& comm)
   {
     comm_ = comm;
   }
 
   template<typename T>
-  inline MPI_Comm MPIParadigm<T>::communicator() const
+  inline typename MPIParadigm<T>::CommType MPIParadigm<T>::communicator() const
   {
     return comm_;
   }
