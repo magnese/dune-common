@@ -78,16 +78,15 @@ mpitest_LDADD =           	                  \
 
 
 threadtest_SOURCES = threadtest.cc
-threadtest_CPPFLAGS = $(AM_CPPFLAGS)                \
-        $(DUNEMPICPPFLAGS)                          \
-        $(DUNE_COMMON_CPPFLAGS)
-threadtest_LDFLAGS = $(AM_LDFLAGS)                  \
-        $(DUNEMPILDFLAGS)                           \
-        $(DUNE_COMMON_LDFLAGS)
-threadtest_LDADD =                                  \
-        $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
-        $(DUNEMPILIBS)                              \
-        $(LDADD)
+threadtest_CPPFLAGS = $(AM_CPPFLAGS)          \
+	$(DUNE_COMMON_CPPFLAGS)
+threadtest_LDFLAGS = $(AM_LDFLAGS)            \
+	$(DUNE_COMMON_LDFLAGS)											\
+	-lpthread
+threadtest_LDADD =                            \
+	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
+	$(LDADD)																		\
+	-lpthread
 
 include $(top_srcdir)/am/global-rules
 
