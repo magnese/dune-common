@@ -6,16 +6,16 @@
 
 #include <iostream>
 #include <vector>
-
+#include <thread>
+#include <mutex>
 #include <dune/common/enumset.hh>
 
-#include <dune/common/parallel/mpicollectivecommunication.hh>
 #include <dune/common/parallel/indexset.hh>
 #include <dune/common/parallel/plocalindex.hh>
-#include <dune/common/parallel/mpiparallelparadigm.hh>
+#include <dune/common/parallel/threadparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
-#include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/communicator.hh>
+//#include <dune/common/parallel/interface.hh>
+//#include <dune/common/parallel/communicator.hh>
 
 // policy: copy
 template<typename T>
@@ -43,73 +43,69 @@ public:
 
 };
 
+// function run by each thread
+void exec(const size_t tid,const size_t numThreads,std::mutex& osmutex){
+
+  // define parallel local index and parallel index set
+  enum flags{owner,ghost};
+  typedef Dune::ParallelLocalIndex<flags> LocalIndexType;
+  typedef Dune::ParallelIndexSet<size_t,LocalIndexType,7> ParallelIndexType;
+
+  // create parallel index set s
+  ParallelIndexType sis;
+  size_t offsetGlobal(0);
+  size_t offsetLocal(0);
+
+  if(tid==1){
+    offsetGlobal=6;
+    offsetLocal=1;
+  }
+
+  sis.beginResize();
+  for(size_t i=0;i!=6;++i) sis.add(i+offsetGlobal,LocalIndexType(i+offsetLocal,owner));
+  if(tid==0) sis.add(6,LocalIndexType(6,ghost));
+  else sis.add(5,LocalIndexType(0,ghost));
+  sis.endResize();
+
+  // output sis
+  osmutex.lock();
+  std::cout<<"s"<<tid<<":"<<std::endl;
+  std::cout<<sis<<std::endl<<std::endl;
+  osmutex.unlock();
+
+  // create parallel paradigm
+  typedef Dune::ThreadParadigm<ParallelIndexType> ParallelParadigmType;
+  ParallelParadigmType pp(tid,numThreads);
+
+  // set remote indices
+  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
+  RemoteIndicesType riS(sis,sis,pp);
+  riS.rebuild<true>();
+
+  // output riS
+  osmutex.lock();
+  std::cout<<"ris"<<tid<<":"<<std::endl;
+  std::cout<<riS<<std::endl;
+  osmutex.unlock();
+
+}
+
 
 int main(int argc,char** argv){
 
-  #if HAVE_MPI
+  // number of thread to use
+  const size_t numThreads(2);
 
-  // init MPI
-  MPI_Init(&argc,&argv);
-  Dune::CollectiveCommunication<MPI_Comm> collCom(MPI_COMM_WORLD);
+  // mutex to avoid race condition in output stream
+  std::mutex osmutex;
 
-  // get size and rank
-  size_t size(collCom.size());
-  size_t rank(collCom.rank());
+  // launch a group of threads to run exec()
+  std::vector<std::thread> t(numThreads);
 
-  // 2 processes
-  if(size>2){
-    if(rank==0) std::cout<<std::endl<<"WARNING: run me again with just 2 processes"<<std::endl;
-  }
-  else{
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec,tid,numThreads,std::ref(osmutex));
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
-    // define parallel local index and parallel index set
-    enum flags{owner,ghost};
-    typedef Dune::ParallelLocalIndex<flags> LocalIndexType;
-    typedef Dune::ParallelIndexSet<size_t,LocalIndexType,7> ParallelIndexType;
-
-    // create parallel index set s
-    ParallelIndexType sis;
-    size_t offsetGlobal(0);
-    size_t offsetLocal(0);
-
-    if(rank==1){
-      offsetGlobal=6;
-      offsetLocal=1;
-    }
-
-    sis.beginResize();
-    for(size_t i=0;i!=6;++i) sis.add(i+offsetGlobal,LocalIndexType(i+offsetLocal,owner));
-    if(rank==0) sis.add(6,LocalIndexType(6,ghost));
-    else sis.add(5,LocalIndexType(0,ghost));
-    sis.endResize();
-
-    // output sis
-    for(size_t i=0;i!=size;++i){
-      if(rank==i){
-        std::cout<<"s"<<rank<<":"<<std::endl;
-        std::cout<<sis<<std::endl<<std::endl;
-      }
-      collCom.barrier();
-    }
-
-    // create parallel paradigm
-    typedef Dune::MPIParadigm<ParallelIndexType> ParallelParadigmType;
-    ParallelParadigmType pp(MPI_COMM_WORLD);
-
-    // set remote indices
-    typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
-    RemoteIndicesType riS(sis,sis,pp);
-    riS.rebuild<true>();
-
-    // output riS
-    for(size_t i=0;i!=size;++i){
-      if(rank==i){
-        std::cout<<"ris"<<rank<<":"<<std::endl;
-        std::cout<<riS<<std::endl;
-      }
-      collCom.barrier();
-    }
-
+/*
     // create interface
     Dune::EnumItem<flags,ghost> ghostFlags;
     Dune::EnumItem<flags,owner> ownerFlags;
@@ -173,14 +169,7 @@ int main(int argc,char** argv){
       }
       collCom.barrier();
     }
-
-  }
-
-  // finalize MPI
-  MPI_Finalize();
-
-  #endif //HAVE_MPI
-
+*/
   return 0;
 
 }

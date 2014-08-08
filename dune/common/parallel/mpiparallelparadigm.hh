@@ -22,7 +22,7 @@ namespace Dune {
    */
   /**
    * @file
-   * @brief Classes implementing the MPI parallel paradigm.
+   * @brief Class implementing the MPI parallel paradigm.
    * @author Marco Agnese, Markus Blatt
    */
 
@@ -67,8 +67,8 @@ namespace Dune {
     MPIParadigm()
     {}
 
-     /** @brief Set the communicator we work with. */
-    inline void setCommunicator(const CommType& comm);
+     /** @brief Set the paradigm we work with. */
+    inline void setParadigm(const CommType& comm);
 
     /** @brief Destructor. */
     ~MPIParadigm()
@@ -92,7 +92,7 @@ namespace Dune {
     MPIParadigm(const MPIParadigm&)
     {}
 
-    /** @brief The communicator to use.*/
+    /** @brief The communicator to use. */
     CommType comm_;
 
     /** @brief The communicator tag to use. */
@@ -174,7 +174,7 @@ namespace Dune {
   {}
 
   template<typename T>
-  inline void MPIParadigm<T>::setCommunicator(const CommType& comm)
+  inline void MPIParadigm<T>::setParadigm(const CommType& comm)
   {
     comm_ = comm;
   }
