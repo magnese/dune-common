@@ -1,12 +1,12 @@
 # $Id$
 
-MPITESTS = indicestest                            \
-           indexsettest                           \
-           syncertest                             \
-           selectiontest                          \
+MPITESTS = indicestest                      \
+           indexsettest                     \
+           syncertest                       \
+           selectiontest                    \
            variablesizecommunicatortest		  \
-	   paralleltest				  \
-	   threadstest
+					 paralleltest				  						\
+					 threadstest
 
 # which tests where program to build and run are equal
 NORMALTESTS =
@@ -50,7 +50,6 @@ syncertest_LDADD =					\
 	$(DUNEMPILIBS)					\
 	$(LDADD)
 
-
 variablesizecommunicatortest_SOURCES = variablesizecommunicatortest.cc
 variablesizecommunicatortest_CPPFLAGS = $(AM_CPPFLAGS)		       \
 	$(DUNEMPICPPFLAGS)			                       \
@@ -64,28 +63,26 @@ variablesizecommunicatortest_LDADD =                                   \
 	$(LDADD)
 
 paralleltest_SOURCES = paralleltest.cc
-paralleltest_CPPFLAGS = $(AM_CPPFLAGS)                 		       \
-        $(DUNEMPICPPFLAGS)                                             \
-        $(DUNE_COMMON_CPPFLAGS)
-paralleltest_LDFLAGS = $(AM_LDFLAGS)                   		       \
-        $(DUNEMPILDFLAGS)                                              \
-        $(DUNE_COMMON_LDFLAGS)
-paralleltest_LDADD =                                   		       \
-        $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
-        $(DUNEMPILIBS)                                                 \
-        $(LDADD)
+paralleltest_CPPFLAGS = $(AM_CPPFLAGS)        \
+	$(DUNEMPICPPFLAGS)                          \
+	$(DUNE_COMMON_CPPFLAGS)
+paralleltest_LDFLAGS = $(AM_LDFLAGS)          \
+  $(DUNEMPILDFLAGS)                           \
+  $(DUNE_COMMON_LDFLAGS)
+paralleltest_LDADD =                          \
+  $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
+  $(DUNEMPILIBS)                             	\
+  $(LDADD)
 
 threadstest_SOURCES = threadstest.cc
-threadstest_CPPFLAGS = $(AM_CPPFLAGS)                                 \
-        $(DUNEMPICPPFLAGS)                                            \
-        $(DUNE_COMMON_CPPFLAGS)
-threadstest_LDFLAGS = $(AM_LDFLAGS)                                   \
-        $(DUNEMPILDFLAGS)                                             \
-        $(DUNE_COMMON_LDFLAGS)
-threadstest_LDADD =                                                   \
-        $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                    \
-        $(DUNEMPILIBS)                                                \
-        $(LDADD)
+threadstest_CPPFLAGS = $(AM_CPPFLAGS)         \
+	$(DUNE_COMMON_CPPFLAGS)
+threadstest_LDFLAGS = $(AM_LDFLAGS)           \
+  $(DUNE_COMMON_LDFLAGS)
+threadstest_LDADD =                           \
+  $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
+  $(LDADD)																		\
+	-lpthread
 
 include $(top_srcdir)/am/global-rules
 
