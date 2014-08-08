@@ -252,14 +252,14 @@ testfconstruct_fail2_CPPFLAGS = $(AM_CPPFLAGS) -DFVSIZE=5
 testfloatcmp_SOURCES = testfloatcmp.cc
 
 threadstest_SOURCES = threadstest.cc
-threadstest_CPPFLAGS = $(AM_CPPFLAGS) $(DUNEMPICPPFLAGS)
-threadstest_LDADD = $(DUNEMPILIBS) $(LDADD)
-threadstest_LDFLAGS = $(AM_LDFLAGS) $(DUNEMPILDFLAGS)
+threadstest_CPPFLAGS = $(AM_CPPFLAGS)
+threadstest_LDADD = $(LDADD)
+threadstest_LDFLAGS = $(AM_LDFLAGS) -lpthread
 
 threadstestcolor_SOURCES = threadstestcolor.cc
-threadstestcolor_CPPFLAGS = $(AM_CPPFLAGS) $(DUNEMPICPPFLAGS)
-threadstestcolor_LDADD = $(DUNEMPILIBS) $(LDADD)
-threadstestcolor_LDFLAGS = $(AM_LDFLAGS) $(DUNEMPILDFLAGS)
+threadstestcolor_CPPFLAGS = $(AM_CPPFLAGS)
+threadstestcolor_LDADD = $(LDADD)
+threadstestcolor_LDFLAGS = $(AM_LDFLAGS) -lpthread
 
 tuplestest_std_SOURCES = tuplestest.cc
 
@@ -268,8 +268,6 @@ tupleutilitytest_SOURCES = tupleutilitytest.cc
 typetraitstest_SOURCES = typetraitstest.cc
 
 utilitytest_SOURCES = utilitytest.cc
-
-
 
 include $(top_srcdir)/am/global-rules
 
