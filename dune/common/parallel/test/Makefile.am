@@ -60,7 +60,7 @@ variablesizecommunicatortest_LDFLAGS = $(AM_LDFLAGS)		       \
 variablesizecommunicatortest_LDADD =                                   \
 	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
 	$(DUNEMPILIBS)                                                 \
-	$(LDADD)
+  $(LDADD)
 
 paralleltest_SOURCES = paralleltest.cc
 paralleltest_CPPFLAGS = $(AM_CPPFLAGS)        \
