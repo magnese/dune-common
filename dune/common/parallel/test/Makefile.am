@@ -81,8 +81,7 @@ threadtest_SOURCES = threadtest.cc
 threadtest_CPPFLAGS = $(AM_CPPFLAGS)          \
 	$(DUNE_COMMON_CPPFLAGS)
 threadtest_LDFLAGS = $(AM_LDFLAGS)            \
-	$(DUNE_COMMON_LDFLAGS)											\
-	-lpthread
+	$(DUNE_COMMON_LDFLAGS)
 threadtest_LDADD =                            \
 	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
 	$(LDADD)																		\
