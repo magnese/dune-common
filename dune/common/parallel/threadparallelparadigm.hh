@@ -24,6 +24,36 @@ namespace Dune {
    * @author Marco Agnese, Markus Blatt
    */
 
+  /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
+  class ThreadCommunicator
+  {
+    public:
+      /** @brief Constructor. */
+      inline ThreadCommunicator(const size_t& size);
+
+      /** @brief Default constructor. */
+      ThreadCommunicator()
+      {}
+
+      /** @brief Set the number of threads. */
+      inline void setSize(const size_t& size);
+
+      /** @brief Destructor. */
+      ~ThreadCommunicator()
+      {}
+
+      /** @brief Get the number of threads. */
+      inline size_t size() const;
+
+    private:
+      /** @brief The number of threads. */
+      size_t size_;
+
+      /** @brief Buffer to exchange int among threads. */
+      std::vector<int> bufferint_;
+
+  };
+
   /**
    * @brief ThreadParadigm.
    * @tparam T The type of the underlying index set.
@@ -45,10 +75,8 @@ namespace Dune {
     /** @brief The type of the attribute. */
     typedef typename LocalIndex::Attribute Attribute;
 
-    //TODO: fake communicator just for compatibility reason since now it is requested by the class RemoteIndices
-    //TODO: it has to be removed as soon as it is removed from the class RemoteIndices
-    typedef size_t CommType;
-    inline CommType communicator(){return 0;}
+    /** @brief The type of the communicator. */
+    typedef ThreadCommunicator CommType;
 
     /** @brief Constructor. */
     inline ThreadParadigm(const size_t& tid, const size_t& size);
@@ -69,6 +97,9 @@ namespace Dune {
 
     /** @brief Get the total number of threads. */
     inline size_t numThreads() const;
+
+    /** @brief Get the communicator. */
+    inline CommType communicator() const;
 
     //! \todo Please finsih to doc me.
     /**
@@ -94,6 +125,8 @@ namespace Dune {
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
 
+    /** @brief Buffer to exchange int among threads. */
+    static std::vector<int> bufferint_;
   };
 
   /** @} */
@@ -124,14 +157,8 @@ namespace Dune {
   template<typename T>
   template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
   inline void ThreadParadigm<T>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
-                                          bool includeSelf)
+                                             bool includeSelf)
   {
-    /*
-    // processor configuration
-    int rank, procs;
-    MPI_Comm_rank(comm_, &rank);
-    MPI_Comm_size(comm_, &procs);
-
     // number of local indices to publish
     // the indices of the destination will be send
     int sourcePublish, destPublish;
@@ -139,7 +166,7 @@ namespace Dune {
     // do we need to send two index sets?
     char sendTwo = (source != target);
 
-    if(procs==1 && !(sendTwo || includeSelf))
+    if(size_==1 && !(sendTwo || includeSelf))
       // nothing to communicate
       return;
 
@@ -168,7 +195,7 @@ namespace Dune {
       destPublish = 0;
 
     int maxPublish, publish=sourcePublish+destPublish;
-
+/*
     // calculate maximum number of indices send
     MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
 
