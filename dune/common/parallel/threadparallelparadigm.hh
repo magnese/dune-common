@@ -10,6 +10,7 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include <algorithm>
 #include <thread>
 #include <mutex>
 
@@ -50,14 +51,14 @@ namespace Dune {
 
       /** @brief Get buffer. */
       template<class T>
-      inline const std::array<T,numThreads>& getBuffer() const;
+      inline std::array<T,numThreads>& getBuffer() const;
 
       /** @brief Delete buffer. */
       template<class T>
       inline void deleteBuffer(const size_t& tid);
 
     private:
-      /** @brief The number of threads. */
+      /** @brief Number of threads. */
       const size_t size_;
 
       /** @brief Pointer to the buffer. */
@@ -65,6 +66,9 @@ namespace Dune {
 
       /** @brief Mutex for the buffer. */
       std::mutex buffermtx_;
+
+      /** @brief Status of the buffer. */
+      bool bufferready_;
 
   };
 
@@ -142,7 +146,7 @@ namespace Dune {
   /** @} */
 
   template<size_t numThreads>
-  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), buffermtx_()
+  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), buffermtx_(), bufferready_(false)
   {}
 
   template<size_t numThreads>
@@ -156,19 +160,25 @@ namespace Dune {
   inline void ThreadCommunicator<numThreads>::createBuffer(const size_t& tid)
   {
     if(tid==0)
+    {
       bufferptr_ = new std::array<T,numThreads>();
+      bufferready_ = true;
+    }
+    //TODO: add sync point!
   }
 
   template<size_t numThreads>
   template<typename T>
   inline void ThreadCommunicator<numThreads>::setBuffer(const T& value, const size_t& tid)
   {
+    while(!bufferready_); // wait that the buffer is ready
     (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
+    //TODO: add sync point!
   }
 
   template<size_t numThreads>
   template<typename T>
-  inline const std::array<T,numThreads>& ThreadCommunicator<numThreads>::getBuffer() const
+  inline std::array<T,numThreads>& ThreadCommunicator<numThreads>::getBuffer() const
   {
     return *(static_cast<std::array<T,numThreads>*>(bufferptr_));
   }
@@ -178,7 +188,11 @@ namespace Dune {
   inline void ThreadCommunicator<numThreads>::deleteBuffer(const size_t& tid)
   {
     if(tid==0)
+    {
+      bufferready_ = false;
       delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+    }
+
   }
 
   template<typename T,typename C>
@@ -249,7 +263,7 @@ namespace Dune {
     // calculate maximum number of indices send
     comm_.template createBuffer<int>(tid_);
     comm_.template setBuffer<int>(publish, tid_);
-    maxPublish = std::max(comm_.template getBuffer<int>());
+    maxPublish = *(std::max_element(comm_.template getBuffer<int>().begin(), comm_.template getBuffer<int>().end()));
     comm_.template deleteBuffer<int>(tid_);
 /*
     MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
