@@ -7,12 +7,14 @@
 #include "indexset.hh"
 #include "plocalindex.hh"
 #include <dune/common/stdstreams.hh>
+#include <utility>
 #include <map>
 #include <set>
 #include <iostream>
 #include <algorithm>
-#include <thread>
+//#include <thread>
 #include <mutex>
+#include <condition_variable>
 
 namespace Dune {
   /** @addtogroup Common_Parallel
@@ -41,11 +43,14 @@ namespace Dune {
       /** @brief Get the number of threads. */
       inline const size_t& size() const;
 
+      /** @brief Barrier to syncronise threads. */
+      inline void barrier();
+
       /** @brief Create buffer to share data among threads. */
       template<class T>
       inline void createBuffer(const size_t& tid);
 
-      /** @brief Set a value into the buffer synchronously. */
+      /** @brief Set a value into the buffer. */
       template<class T>
       inline void setBuffer(const T& value, const size_t& tid);
 
@@ -64,11 +69,17 @@ namespace Dune {
       /** @brief Pointer to the buffer. */
       void* bufferptr_;
 
-      /** @brief Mutex for the buffer. */
-      std::mutex buffermtx_;
+      /** @brief Mutex used for the barrier. */
+      std::mutex mtx_;
 
-      /** @brief Status of the buffer. */
-      bool bufferready_;
+      /** @brief Counter used for the barrier. */
+      size_t count_;
+
+      /** @brief Second counter used for the barrier. */
+      size_t seccount_;
+
+      /** @brief Condition variable used for the barrier. */
+      std::condition_variable condvar_;
 
   };
 
@@ -146,7 +157,7 @@ namespace Dune {
   /** @} */
 
   template<size_t numThreads>
-  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), buffermtx_(), bufferready_(false)
+  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
   template<size_t numThreads>
@@ -156,24 +167,40 @@ namespace Dune {
   }
 
   template<size_t numThreads>
+  inline void ThreadCommunicator<numThreads>::barrier()
+  {
+    std::unique_lock<std::mutex> lock(mtx_);
+    const size_t oldSecCount = seccount_;
+    ++count_;
+    if(count_ != size_)
+    {
+      // wait condition must not depend on wait_count
+      condvar_.wait(lock, [this, oldSecCount]() {return seccount_ != oldSecCount;});
+    }
+    else
+    {
+      count_ = 0; // reset counter for later use of the barrier //TODO: fix the reset, may lead to a segmentation fault
+      // increasing the second counter allows waiting threads to exit
+      ++seccount_;
+      condvar_.notify_all();
+    }
+  }
+
+  template<size_t numThreads>
   template<typename T>
   inline void ThreadCommunicator<numThreads>::createBuffer(const size_t& tid)
   {
     if(tid==0)
-    {
       bufferptr_ = new std::array<T,numThreads>();
-      bufferready_ = true;
-    }
-    //TODO: add sync point!
+    barrier(); // syncronization
   }
 
   template<size_t numThreads>
   template<typename T>
   inline void ThreadCommunicator<numThreads>::setBuffer(const T& value, const size_t& tid)
   {
-    while(!bufferready_); // wait that the buffer is ready
     (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
-    //TODO: add sync point!
+    barrier(); // syncronization
   }
 
   template<size_t numThreads>
@@ -189,10 +216,10 @@ namespace Dune {
   {
     if(tid==0)
     {
-      bufferready_ = false;
       delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+      bufferptr_ = nullptr;
     }
-
+    barrier(); // syncronization //TODO: maybe useless
   }
 
   template<typename T,typename C>
@@ -221,19 +248,65 @@ namespace Dune {
   template<typename T,typename C>
   template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
   inline void ThreadParadigm<T,C>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
-                                             bool includeSelf)
+                                               bool includeSelf)
   {
-    // number of local indices to publish
-    // the indices of the destination will be send
-    int sourcePublish, destPublish;
+    // is the source different form the target?
+    bool differentTarget(source != target);
 
-    // do we need to send two index sets?
-    char sendTwo = (source != target);
-
-    if(comm_.size()==1 && !(sendTwo || includeSelf))
-      // nothing to communicate
+    if(comm_.size()==1 && !(differentTarget || includeSelf))
+      // nothing to do
       return;
 
+    // create buffer to communicate indices
+    typedef std::pair<const T*,const T*> IndicesPairType;
+    comm_.template createBuffer<IndicesPairType>(tid_);
+    comm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
+
+    // indices for which we receive
+    RemoteIndexList* receive= new RemoteIndexList();
+    // indices for which we send
+    RemoteIndexList* send=0;
+
+    typedef typename T::const_iterator const_iterator;
+    typedef typename RemoteIndexList::MemberType RemoteIndex;
+    RemoteIndex* remoteIdxPtr(nullptr);
+
+    if(differentTarget)
+    {
+      send = new RemoteIndexList();
+      if(!(neighbourIds.empty())){
+        for(size_t i = 0; i != comm_.size(); ++i)
+        {
+          const_iterator itEnd = source->end();
+          for(const_iterator it = source->begin(); it != itEnd; ++it)
+          {
+            const_iterator itREnd = (comm_.template getBuffer<IndicesPairType>())[i].second->end();
+            for(const_iterator itR = (comm_.template getBuffer<IndicesPairType>())[i].second->begin(); itR != itREnd; ++itR)
+            {
+              if(it->global() == itR->global())
+              {
+                neighbourIds.insert(i);
+                remoteIdxPtr = new RemoteIndex(itR->local().attribute(),PairType(it->global(),LocalIndex(it->local().local(),it->local().attribute())));
+                //send.insert();
+              }
+            }
+          }
+        }
+      }
+      else
+      {
+
+      }
+
+    }
+    else
+    {
+
+    }
+
+    comm_.template deleteBuffer<IndicesPairType>(tid_);
+
+/*
     typedef typename T::const_iterator const_iterator;
 
     int noPublicSource=0;
@@ -265,11 +338,11 @@ namespace Dune {
     comm_.template setBuffer<int>(publish, tid_);
     maxPublish = *(std::max_element(comm_.template getBuffer<int>().begin(), comm_.template getBuffer<int>().end()));
     comm_.template deleteBuffer<int>(tid_);
-/*
-    MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
+
+    //MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
 
     // allocate buffers
-    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
+    //typedef IndexPair<GlobalIndex,LocalIndex> PairType;
 
     PairType** destPairs;
     PairType** sourcePairs = new PairType*[sourcePublish>0 ? sourcePublish : 1];
@@ -285,6 +358,66 @@ namespace Dune {
     int intSize;
     int charSize;
 
+*/
+//    unpackCreateRemote<RemoteIndexList,RemoteIndexMap>(buffer[0], sourcePairs, destPairs, remoteIndices, rank, sourcePublish, destPublish,
+//                                                         bufferSize, sendTwo, includeSelf);
+
+//template<typename RemoteIndexList,typename RemoteIndexMap>
+//  inline void MPIParadigm<T>::unpackCreateRemote(char* p_in, PairType** sourcePairs, PairType** destPairs, RemoteIndexMap& remoteIndices,
+//                                                 int remoteProc, int sourcePublish, int destPublish, int bufferSize, bool sendTwo,
+//                                                 bool fromOurSelf)
+//  {
+    // unpack the number of indices we received
+//    int noRemoteSource=-1, noRemoteDest=-1;
+//    char twoIndexSets=0;
+//    int position=0;
+    // did we receive two index sets?
+//    MPI_Unpack(p_in, bufferSize, &position, &twoIndexSets, 1, MPI_CHAR, comm_);
+    // the number of source indices received
+//    MPI_Unpack(p_in, bufferSize, &position, &noRemoteSource, 1, MPI_INT, comm_);
+    // the number of destination indices received
+//    MPI_Unpack(p_in, bufferSize, &position, &noRemoteDest, 1, MPI_INT, comm_);
+
+    //MPI_Datatype type= MPITraits<PairType>::getType();
+/*
+    if(!twoIndexSets) {
+      if(sendTwo) {
+        send = new RemoteIndexList();
+        // create both remote index sets simultaneously
+        unpackIndices<RemoteIndexList>(*send, *receive, noRemoteSource, sourcePairs, sourcePublish, destPairs, destPublish, p_in, type,
+                                       &position, bufferSize);
+      }else{
+        // we only need one list
+        unpackIndices<RemoteIndexList>(*receive, noRemoteSource, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
+        send=receive;
+      }
+    }else{
+
+      int oldPos=position;
+      // two index sets received
+      unpackIndices<RemoteIndexList>(*receive, noRemoteSource, destPairs, destPublish, p_in, type, &position, bufferSize, fromOurSelf);
+      if(!sendTwo)
+        // unpack source entries again as destination entries
+        position=oldPos;
+
+      send = new RemoteIndexList();
+      unpackIndices<RemoteIndexList>(*send, noRemoteDest, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
+    }
+
+    if(receive->empty() && send->empty()) {
+      if(send==receive) {
+        delete send;
+      }else{
+        delete send;
+        delete receive;
+      }
+    }else{
+      remoteIndices.insert(std::make_pair(remoteProc, std::make_pair(send,receive)));
+    }
+
+//  }
+*/
+/*
     // calculate buffer size
     MPI_Datatype type = MPITraits<PairType>::getType();
 
