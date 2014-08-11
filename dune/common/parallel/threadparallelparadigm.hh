@@ -25,40 +25,55 @@ namespace Dune {
    */
 
   /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
+  template<size_t numThreads>
   class ThreadCommunicator
   {
     public:
-      /** @brief Constructor. */
-      inline ThreadCommunicator(const size_t& size);
 
       /** @brief Default constructor. */
-      ThreadCommunicator()
-      {}
-
-      /** @brief Set the number of threads. */
-      inline void setSize(const size_t& size);
+      inline ThreadCommunicator();
 
       /** @brief Destructor. */
-      ~ThreadCommunicator()
+      inline ~ThreadCommunicator()
       {}
 
       /** @brief Get the number of threads. */
-      inline size_t size() const;
+      inline const size_t& size() const;
+
+      /** @brief Create buffer to share data among threads. */
+      template<class T>
+      inline void createBuffer(const size_t& tid);
+
+      /** @brief Set a value into the buffer synchronously. */
+      template<class T>
+      inline void setBuffer(const T& value, const size_t& tid);
+
+      /** @brief Get buffer. */
+      template<class T>
+      inline const std::array<T,numThreads>& getBuffer() const;
+
+      /** @brief Delete buffer. */
+      template<class T>
+      inline void deleteBuffer(const size_t& tid);
 
     private:
       /** @brief The number of threads. */
-      size_t size_;
+      const size_t size_;
 
-      /** @brief Buffer to exchange int among threads. */
-      std::vector<int> bufferint_;
+      /** @brief Pointer to the buffer. */
+      void* bufferptr_;
+
+      /** @brief Mutex for the buffer. */
+      std::mutex buffermtx_;
 
   };
 
   /**
    * @brief ThreadParadigm.
    * @tparam T The type of the underlying index set.
+   * @tparam C The type of the communicator.
    */
-  template<class T>
+  template<class T, class C>
   class ThreadParadigm
   {
 
@@ -76,17 +91,17 @@ namespace Dune {
     typedef typename LocalIndex::Attribute Attribute;
 
     /** @brief The type of the communicator. */
-    typedef ThreadCommunicator CommType;
+    typedef C CommType;
 
     /** @brief Constructor. */
-    inline ThreadParadigm(const size_t& tid, const size_t& size);
+    inline ThreadParadigm(CommType& comm, const size_t& tid);
 
     /** @brief Default constructor. */
     ThreadParadigm()
     {}
 
      /** @brief Set the paradigm we work with. */
-    inline void setParadigm(const size_t& tid, const size_t& size);
+    inline void setParadigm(CommType& comm, const size_t& tid);
 
     /** @brief Destructor. */
     ~ThreadParadigm()
@@ -95,11 +110,8 @@ namespace Dune {
     /** @brief Get the thread ID. */
     inline size_t threadID() const;
 
-    /** @brief Get the total number of threads. */
-    inline size_t numThreads() const;
-
-    /** @brief Get the communicator. */
-    inline CommType communicator() const;
+   /** @brief Get the communicator. */
+    inline const CommType& communicator() const;
 
     //! \todo Please finsih to doc me.
     /**
@@ -116,47 +128,85 @@ namespace Dune {
     ThreadParadigm(const ThreadParadigm&)
     {}
 
+    /** @brief The communicator. */
+    CommType& comm_;
+
     /** @brief The thread ID. */
     size_t tid_;
-
-    /** @brief The number of threads. */
-    size_t size_;
 
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
 
-    /** @brief Buffer to exchange int among threads. */
-    static std::vector<int> bufferint_;
   };
 
   /** @} */
 
-  template<typename T>
-  inline ThreadParadigm<T>::ThreadParadigm(const size_t& tid, const size_t& size) : tid_(tid), size_(size)
+  template<size_t numThreads>
+  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), buffermtx_()
   {}
 
-  template<typename T>
-  inline void ThreadParadigm<T>::setParadigm(const size_t& tid, const size_t& size)
-  {
-    tid_ = tid;
-    size_ = size;
-  }
-
-  template<typename T>
-  inline size_t ThreadParadigm<T>::threadID() const
-  {
-    return tid_;
-  }
-
-  template<typename T>
-  inline size_t ThreadParadigm<T>::numThreads() const
+  template<size_t numThreads>
+  inline const size_t& ThreadCommunicator<numThreads>::size() const
   {
     return size_;
   }
 
+  template<size_t numThreads>
   template<typename T>
+  inline void ThreadCommunicator<numThreads>::createBuffer(const size_t& tid)
+  {
+    if(tid==0)
+      bufferptr_ = new std::array<T,numThreads>();
+  }
+
+  template<size_t numThreads>
+  template<typename T>
+  inline void ThreadCommunicator<numThreads>::setBuffer(const T& value, const size_t& tid)
+  {
+    (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
+  }
+
+  template<size_t numThreads>
+  template<typename T>
+  inline const std::array<T,numThreads>& ThreadCommunicator<numThreads>::getBuffer() const
+  {
+    return *(static_cast<std::array<T,numThreads>*>(bufferptr_));
+  }
+
+  template<size_t numThreads>
+  template<typename T>
+  inline void ThreadCommunicator<numThreads>::deleteBuffer(const size_t& tid)
+  {
+    if(tid==0)
+      delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+  }
+
+  template<typename T,typename C>
+  inline ThreadParadigm<T,C>::ThreadParadigm(CommType& comm, const size_t& tid) : comm_(comm), tid_(tid)
+  {}
+
+  template<typename T,typename C>
+  inline void ThreadParadigm<T,C>::setParadigm(CommType& comm, const size_t& tid)
+  {
+    comm_ = comm;
+    tid_ = tid;
+  }
+
+  template<typename T,typename C>
+  inline size_t ThreadParadigm<T,C>::threadID() const
+  {
+    return tid_;
+  }
+
+  template<typename T,typename C>
+  inline const typename ThreadParadigm<T,C>::CommType& ThreadParadigm<T,C>::communicator() const
+  {
+    return comm_;
+  }
+
+  template<typename T,typename C>
   template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
-  inline void ThreadParadigm<T>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
+  inline void ThreadParadigm<T,C>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
                                              bool includeSelf)
   {
     // number of local indices to publish
@@ -166,7 +216,7 @@ namespace Dune {
     // do we need to send two index sets?
     char sendTwo = (source != target);
 
-    if(size_==1 && !(sendTwo || includeSelf))
+    if(comm_.size()==1 && !(sendTwo || includeSelf))
       // nothing to communicate
       return;
 
@@ -195,8 +245,13 @@ namespace Dune {
       destPublish = 0;
 
     int maxPublish, publish=sourcePublish+destPublish;
-/*
+
     // calculate maximum number of indices send
+    comm_.template createBuffer<int>(tid_);
+    comm_.template setBuffer<int>(publish, tid_);
+    maxPublish = std::max(comm_.template getBuffer<int>());
+    comm_.template deleteBuffer<int>(tid_);
+/*
     MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
 
     // allocate buffers
