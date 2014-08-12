@@ -846,8 +846,7 @@ namespace Dune {
     if(firstBuild || ignorePublic!=publicIgnored || ! isSynced()) {
       free();
 
-      parallel_.template buildRemote<ignorePublic,RemoteIndexList,RemoteIndexMap>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
-
+      parallel_.template buildRemote<ignorePublic,RemoteIndexList>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
       sourceSeqNo_ = source_->seqNo();
       destSeqNo_ = target_->seqNo();
       firstBuild=false;
