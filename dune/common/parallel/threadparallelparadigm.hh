@@ -269,7 +269,6 @@ namespace Dune {
 
     typedef typename T::const_iterator const_iterator;
     typedef typename RemoteIndexList::MemberType RemoteIndex;
-    RemoteIndex* remoteIdxPtr(nullptr);
 
     if(differentTarget)
     {
@@ -286,8 +285,9 @@ namespace Dune {
               if(it->global() == itR->global())
               {
                 neighbourIds.insert(i);
-                //remoteIdxPtr = new RemoteIndex(itR->local().attribute(),PairType(it->global(),LocalIndex(it->local().local(),it->local().attribute())));
-                //send.insert();
+                PairType* pairTypePtr = new PairType(it->global(),LocalIndex(it->local().local(),it->local().attribute()));
+                const RemoteIndex* remoteIdxPtr = new RemoteIndex(itR->local().attribute(), pairTypePtr);
+                send->push_back(*remoteIdxPtr);
               }
             }
           }
