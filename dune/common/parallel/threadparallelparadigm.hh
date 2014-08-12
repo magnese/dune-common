@@ -286,7 +286,7 @@ namespace Dune {
               if(it->global() == itR->global())
               {
                 neighbourIds.insert(i);
-                remoteIdxPtr = new RemoteIndex(itR->local().attribute(),PairType(it->global(),LocalIndex(it->local().local(),it->local().attribute())));
+                //remoteIdxPtr = new RemoteIndex(itR->local().attribute(),PairType(it->global(),LocalIndex(it->local().local(),it->local().attribute())));
                 //send.insert();
               }
             }
