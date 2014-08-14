@@ -66,8 +66,10 @@ namespace Dune {
       /** @brief Number of threads. */
       const size_t size_;
 
+      /** @brief Flag used by std::call_once function. */
       std::once_flag bufferflag_;
 
+      /** @brief Status of the buffer. */
       bool bufferready_;
 
       /** @brief Pointer to the buffer. */
@@ -85,9 +87,11 @@ namespace Dune {
       /** @brief Condition variable used for the barrier. */
       std::condition_variable condvar_;
 
+      /** @brief Allocate the buffer. */
       template<class T>
       inline void createBuffer_();
 
+      /** @brief Deallocate the buffer. */
       template<class T>
       inline void deleteBuffer_();
   };
@@ -160,6 +164,10 @@ namespace Dune {
 
     /** @brief The index pair type. */
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
+
+    /** @brief Given a source and a target, it creates the corresponding RemoteIndexList. */
+    template<typename RemoteIndexList>
+    inline RemoteIndexList* createRemoteIndexList(const T* source,const T* target);
 
   };
 
@@ -266,6 +274,36 @@ namespace Dune {
   }
 
   template<typename T,typename C>
+  template<typename RemoteIndexList>
+  inline RemoteIndexList* ThreadParadigm<T,C>::createRemoteIndexList(const T* source,const T* target)
+  {
+    // index list
+    RemoteIndexList* remoteIndexList = new RemoteIndexList();
+
+    typedef typename T::const_iterator const_iterator;
+    typedef typename RemoteIndexList::MemberType RemoteIndex;
+
+    const_iterator itSEnd = source->end();
+    for(const_iterator itS = source->begin(); itS != itSEnd; ++itS)
+    {
+      const_iterator itTEnd = target ->end();
+      for(const_iterator itT = target ->begin(); itT != itTEnd; ++itT)
+      {
+
+        if(itS->global() == itT->global())
+        {
+          PairType* pairTypePtr = new PairType(itS->global(),LocalIndex(itS->local().local(),itS->local().attribute()));
+          const RemoteIndex* remoteIdxPtr = new RemoteIndex(itT->local().attribute(), pairTypePtr);
+          remoteIndexList->push_back(*remoteIdxPtr);
+        }
+
+      }
+    }
+
+    return remoteIndexList;
+  }
+
+  template<typename T,typename C>
   template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
   inline void ThreadParadigm<T,C>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
                                                bool includeSelf)
@@ -283,10 +321,23 @@ namespace Dune {
     comm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
     // indices for which we receive
-    RemoteIndexList* receive= new RemoteIndexList();
+    //RemoteIndexList* receive= new RemoteIndexList();
     // indices for which we send
     RemoteIndexList* send=0;
+    RemoteIndexList* receive=0;
 
+    int remoteProc = (tid_+1)%2;
+    const T* remoteTarget = (comm_.template getBuffer<IndicesPairType>())[(tid_+1)%2].second;
+    send = createRemoteIndexList<RemoteIndexList>(source,(comm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+
+    receive=send;
+
+    neighbourIds.insert(remoteProc);
+
+    remoteIndices.insert(std::make_pair(remoteProc, std::make_pair(send,receive)));
+
+
+/*
     typedef typename T::const_iterator const_iterator;
     typedef typename RemoteIndexList::MemberType RemoteIndex;
 
@@ -323,7 +374,7 @@ namespace Dune {
     {
 
     }
-
+    */
     comm_.template deleteBuffer<IndicesPairType>();
 
 /*
