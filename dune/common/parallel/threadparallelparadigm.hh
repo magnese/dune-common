@@ -166,7 +166,7 @@ namespace Dune {
     typedef IndexPair<GlobalIndex,LocalIndex> PairType;
 
     /** @brief Given a source and a target, it creates the corresponding RemoteIndexList. */
-    template<typename RemoteIndexList>
+    template<bool ignorePublic,typename RemoteIndexList>
     inline RemoteIndexList* createRemoteIndexList(const T* source,const T* target);
 
   };
@@ -183,6 +183,7 @@ namespace Dune {
     return size_;
   }
 
+  //TODO: FIX ME! sometimes it leads to a segmentaiton fault (I think)
   template<size_t numThreads>
   inline void ThreadCommunicator<numThreads>::barrier()
   {
@@ -196,7 +197,7 @@ namespace Dune {
     }
     else
     {
-      count_ = 0; // reset counter for later use of the barrier //TODO: fix the reset, may lead to a segmentation fault
+      count_ = 0; // reset counter for later use of the barrier
       // increasing the second counter allows waiting threads to exit
       ++seccount_;
       condvar_.notify_all();
@@ -274,7 +275,7 @@ namespace Dune {
   }
 
   template<typename T,typename C>
-  template<typename RemoteIndexList>
+  template<bool ignorePublic,typename RemoteIndexList>
   inline RemoteIndexList* ThreadParadigm<T,C>::createRemoteIndexList(const T* source,const T* target)
   {
     // index list
@@ -292,9 +293,11 @@ namespace Dune {
 
         if(itS->global() == itT->global())
         {
-          PairType* pairTypePtr = new PairType(itS->global(),LocalIndex(itS->local().local(),itS->local().attribute()));
-          const RemoteIndex* remoteIdxPtr = new RemoteIndex(itT->local().attribute(), pairTypePtr);
-          remoteIndexList->push_back(*remoteIdxPtr);
+          if(itS->local().isPublic() || ignorePublic)
+          {
+            const RemoteIndex* remoteIdxPtr = new RemoteIndex(itT->local().attribute(), &(*itS));
+            remoteIndexList->push_back(*remoteIdxPtr);
+          }
         }
 
       }
@@ -330,12 +333,12 @@ namespace Dune {
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
-          send = createRemoteIndexList<RemoteIndexList>(source,(comm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+          send = createRemoteIndexList<ignorePublic,RemoteIndexList>(source,(comm_.template getBuffer<IndicesPairType>())[remoteProc].second);
 
           if(!(send->empty()))
             neighbourIds.insert(remoteProc);
           if(differentTarget && (!(send->empty())))
-            receive  = createRemoteIndexList<RemoteIndexList>((comm_.template getBuffer<IndicesPairType>())[remoteProc].first,target);
+            receive  = createRemoteIndexList<ignorePublic,RemoteIndexList>(target,(comm_.template getBuffer<IndicesPairType>())[remoteProc].first);
           else
             receive=send;
 
@@ -351,9 +354,9 @@ namespace Dune {
         {
           if(neighbourIds.find(remoteProc)!=neighbourIds.end())
           {
-            send = createRemoteIndexList<RemoteIndexList>(source,(comm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+            send = createRemoteIndexList<ignorePublic,RemoteIndexList>(source,(comm_.template getBuffer<IndicesPairType>())[remoteProc].second);
             if(differentTarget)
-              receive  = createRemoteIndexList<RemoteIndexList>((comm_.template getBuffer<IndicesPairType>())[remoteProc].first,target);
+              receive  = createRemoteIndexList<ignorePublic,RemoteIndexList>(target,(comm_.template getBuffer<IndicesPairType>())[remoteProc].first);
             else
               receive=send;
 
