@@ -48,7 +48,7 @@ namespace Dune {
 
       /** @brief Create buffer to share data among threads. */
       template<class T>
-      inline void createBuffer(const size_t& tid);
+      inline void createBuffer();
 
       /** @brief Set a value into the buffer. */
       template<class T>
@@ -60,11 +60,15 @@ namespace Dune {
 
       /** @brief Delete buffer. */
       template<class T>
-      inline void deleteBuffer(const size_t& tid);
+      inline void deleteBuffer();
 
     private:
       /** @brief Number of threads. */
       const size_t size_;
+
+      std::once_flag bufferflag_;
+
+      bool bufferready_;
 
       /** @brief Pointer to the buffer. */
       void* bufferptr_;
@@ -81,6 +85,11 @@ namespace Dune {
       /** @brief Condition variable used for the barrier. */
       std::condition_variable condvar_;
 
+      template<class T>
+      inline void createBuffer_();
+
+      template<class T>
+      inline void deleteBuffer_();
   };
 
   /**
@@ -157,7 +166,7 @@ namespace Dune {
   /** @} */
 
   template<size_t numThreads>
-  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
+  inline ThreadCommunicator<numThreads>::ThreadCommunicator() : size_(numThreads), bufferready_(false), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
   template<size_t numThreads>
@@ -188,17 +197,24 @@ namespace Dune {
 
   template<size_t numThreads>
   template<typename T>
-  inline void ThreadCommunicator<numThreads>::createBuffer(const size_t& tid)
+  inline void ThreadCommunicator<numThreads>::createBuffer_()
   {
-    if(tid==0)
-      bufferptr_ = new std::array<T,numThreads>();
-    barrier(); // syncronization
+    bufferptr_ = new std::array<T,numThreads>();
+    bufferready_ = true;
+  }
+
+  template<size_t numThreads>
+  template<typename T>
+  inline void ThreadCommunicator<numThreads>::createBuffer()
+  {
+    std::call_once(bufferflag_,&ThreadCommunicator<numThreads>::createBuffer_<T>,this);
   }
 
   template<size_t numThreads>
   template<typename T>
   inline void ThreadCommunicator<numThreads>::setBuffer(const T& value, const size_t& tid)
   {
+    while(!bufferready_);
     (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
     barrier(); // syncronization
   }
@@ -212,14 +228,18 @@ namespace Dune {
 
   template<size_t numThreads>
   template<typename T>
-  inline void ThreadCommunicator<numThreads>::deleteBuffer(const size_t& tid)
+  inline void ThreadCommunicator<numThreads>::deleteBuffer_()
   {
-    if(tid==0)
-    {
-      delete static_cast<std::array<T,numThreads>*>(bufferptr_);
-      bufferptr_ = nullptr;
-    }
-    barrier(); // syncronization //TODO: maybe useless
+    bufferready_ = false;
+    delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+    bufferptr_ = nullptr;
+  }
+
+  template<size_t numThreads>
+  template<typename T>
+  inline void ThreadCommunicator<numThreads>::deleteBuffer()
+  {
+    std::call_once(bufferflag_,&ThreadCommunicator<numThreads>::deleteBuffer_<T>,this);
   }
 
   template<typename T,typename C>
@@ -259,7 +279,7 @@ namespace Dune {
 
     // create buffer to communicate indices
     typedef std::pair<const T*,const T*> IndicesPairType;
-    comm_.template createBuffer<IndicesPairType>(tid_);
+    comm_.template createBuffer<IndicesPairType>();
     comm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
     // indices for which we receive
@@ -304,7 +324,7 @@ namespace Dune {
 
     }
 
-    comm_.template deleteBuffer<IndicesPairType>(tid_);
+    comm_.template deleteBuffer<IndicesPairType>();
 
 /*
     typedef typename T::const_iterator const_iterator;
