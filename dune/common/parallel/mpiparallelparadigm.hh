@@ -67,7 +67,7 @@ namespace Dune {
     MPIParadigm()
     {}
 
-     /** @brief Set the paradigm we work with. */
+    /** @brief Set the paradigm we work with. */
     inline void setParadigm(const CommType& comm);
 
     /** @brief Destructor. */
