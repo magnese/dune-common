@@ -114,7 +114,7 @@ int main(int argc,char** argv){
     Dune::EnumItem<flags,ghost> ghostFlags;
     Dune::EnumItem<flags,owner> ownerFlags;
 
-    typedef Dune::Interface InterfaceType;
+    typedef Dune::Interface<RemoteIndicesType> InterfaceType;
     InterfaceType infS(MPI_COMM_WORLD);
     infS.build(riS,ownerFlags,ghostFlags);
 

@@ -4,8 +4,6 @@
 #ifndef DUNE_INTERFACE_HH
 #define DUNE_INTERFACE_HH
 
-#if HAVE_MPI
-
 #include "remoteindices.hh"
 #include <dune/common/enumset.hh>
 
@@ -178,6 +176,7 @@ namespace Dune
    *
    * Describes the communication interface between indices on the local process and those on remote processes.
    */
+  template<class R>
   class Interface : public InterfaceBuilder
   {
 
@@ -197,8 +196,8 @@ namespace Dune
      * @param sourceFlags The set of flags marking indices we send from.
      * @param destFlags The set of flags marking indices we receive for.
      */
-    template<typename R, typename T1, typename T2>
-    void build(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags);
+    template<typename RR, typename T1, typename T2>
+    void build(const RR& remoteIndices, const T1& sourceFlags, const T2& destFlags);
 
     /** @brief Frees memory allocated during the build. */
     void free();
@@ -360,23 +359,27 @@ namespace Dune
     }
   }
 
-  inline MPI_Comm Interface::communicator() const
+  template<typename R>
+  inline MPI_Comm Interface<R>::communicator() const
   {
     return communicator_;
 
   }
 
-  inline const std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface::interfaces() const
+  template<typename R>
+  inline const std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface<R>::interfaces() const
   {
     return interfaces_;
   }
 
-  inline std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface::interfaces()
+  template<typename R>
+  inline std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface<R>::interfaces()
   {
     return interfaces_;
   }
 
-  inline void Interface::print() const
+  template<typename R>
+  inline void Interface<R>::print() const
   {
     typedef InformationMap::const_iterator const_iterator;
     const const_iterator end=interfaces_.end();
@@ -402,8 +405,9 @@ namespace Dune
     }
   }
 
-  template<typename R, typename T1, typename T2>
-  inline void Interface::build(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags)
+  template<typename R>
+  template<typename RR, typename T1, typename T2>
+  inline void Interface<R>::build(const RR& remoteIndices, const T1& sourceFlags, const T2& destFlags)
   {
     communicator_=remoteIndices.communicator();
 
@@ -419,7 +423,8 @@ namespace Dune
     strip();
   }
 
-  inline void Interface::strip()
+  template<typename R>
+  inline void Interface<R>::strip()
   {
     typedef InformationMap::iterator const_iterator;
     for(const_iterator interfacePair = interfaces_.begin(); interfacePair != interfaces_.end();)
@@ -434,7 +439,8 @@ namespace Dune
         ++interfacePair;
   }
 
-  inline void Interface::free()
+  template<typename R>
+  inline void Interface<R>::free()
   {
     typedef InformationMap::iterator iterator;
     typedef InformationMap::const_iterator const_iterator;
@@ -447,7 +453,8 @@ namespace Dune
     interfaces_.clear();
   }
 
-  inline Interface::~Interface()
+  template<typename R>
+  inline Interface<R>::~Interface()
   {
     free();
   }
@@ -456,10 +463,11 @@ namespace Dune
 
 namespace std
 {
-  inline ostream& operator<<(ostream& os, const Dune::Interface& interface)
+  template<typename R>
+  inline ostream& operator<<(ostream& os, const Dune::Interface<R>& interface)
   {
-    typedef Dune::Interface::InformationMap InfoMap;
-    typedef InfoMap::const_iterator Iter;
+    typedef typename Dune::Interface<R>::InformationMap InfoMap;
+    typedef typename InfoMap::const_iterator Iter;
     Iter end = interface.interfaces().end();
     for(Iter i=interface.interfaces().begin(); i!=end; ++i)
     {
@@ -474,6 +482,5 @@ namespace std
     return os;
   }
 } // end namespace std
-#endif // HAVE_MPI
 
 #endif
