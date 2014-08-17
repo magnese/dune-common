@@ -320,10 +320,6 @@ namespace Dune
 
     const const_iterator end=remoteIndices.end();
 
-    int rank;
-
-    MPI_Comm_rank(remoteIndices.communicator(), &rank);
-
     // allocate memory for the type construction
     for(const_iterator process=remoteIndices.begin(); process != end; ++process)
     {
@@ -335,7 +331,7 @@ namespace Dune
 
       while(remote!=remoteEnd)
       {
-        if( send ?  destFlags.contains(remote->attribute()) : sourceFlags.contains(remote->attribute()))
+        if( send ? destFlags.contains(remote->attribute()) : sourceFlags.contains(remote->attribute()))
         {
           // do we send the index?
           if( send ? sourceFlags.contains(remote->localIndexPair().local().attribute()) : destFlags.contains(remote->localIndexPair().local().attribute()))
@@ -355,7 +351,7 @@ namespace Dune
 
       while(remote!=remoteEnd)
       {
-        if( send ?  destFlags.contains(remote->attribute()) : sourceFlags.contains(remote->attribute()))
+        if( send ? destFlags.contains(remote->attribute()) : sourceFlags.contains(remote->attribute()))
         {
           // do we send the index?
           if( send ? sourceFlags.contains(remote->localIndexPair().local().attribute()) : destFlags.contains(remote->localIndexPair().local().attribute()))
@@ -390,20 +386,18 @@ namespace Dune
   {
     typedef InformationMap::const_iterator const_iterator;
     const const_iterator end=interfaces_.end();
-    int rank;
-    MPI_Comm_rank(communicator(), &rank);
 
     for(const_iterator infoPair=interfaces_.begin(); infoPair!=end; ++infoPair)
     {
       {
-        std::cout<<rank<<": send for process "<<infoPair->first<<": ";
+        std::cout<<"send for process "<<infoPair->first<<": ";
         const InterfaceInformation& info(infoPair->second.first);
         for(size_t i=0; i < info.size(); i++)
           std::cout<<info[i]<<" ";
         std::cout<<std::endl;
       }
       {
-        std::cout<<rank<<": receive for process "<<infoPair->first<<": ";
+        std::cout<<"receive for process "<<infoPair->first<<": ";
         const InterfaceInformation& info(infoPair->second.second);
         for(size_t i=0; i < info.size(); i++)
           std::cout<<info[i]<<" ";

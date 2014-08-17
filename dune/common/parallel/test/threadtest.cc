@@ -14,7 +14,7 @@
 #include <dune/common/parallel/plocalindex.hh>
 #include <dune/common/parallel/threadparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
-//#include <dune/common/parallel/interface.hh>
+#include <dune/common/parallel/interface.hh>
 //#include <dune/common/parallel/communicator.hh>
 
 // policy: copy
@@ -44,7 +44,8 @@ public:
 };
 
 // function run by each thread
-void exec(const size_t tid,const size_t numThreads,std::mutex& osmutex){
+template<class C>
+void exec(C& comm, const size_t tid, std::mutex& osmutex){
 
   // define parallel local index and parallel index set
   enum flags{owner,ghost};
@@ -74,13 +75,14 @@ void exec(const size_t tid,const size_t numThreads,std::mutex& osmutex){
   osmutex.unlock();
 
   // create parallel paradigm
-  typedef Dune::ThreadParadigm<ParallelIndexType> ParallelParadigmType;
-  ParallelParadigmType pp(tid,numThreads);
+  typedef C CommunicatorType;
+  typedef Dune::ThreadParadigm<ParallelIndexType,CommunicatorType> ParallelParadigmType;
+  ParallelParadigmType pp(comm,tid);
 
   // set remote indices
   typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
   RemoteIndicesType riS(sis,sis,pp);
-  riS.rebuild<true>();
+  riS.template rebuild<true>();
 
   // output riS
   osmutex.lock();
@@ -88,13 +90,54 @@ void exec(const size_t tid,const size_t numThreads,std::mutex& osmutex){
   std::cout<<riS<<std::endl;
   osmutex.unlock();
 
+  // create interface
+  Dune::EnumItem<flags,ghost> ghostFlags;
+  Dune::EnumItem<flags,owner> ownerFlags;
+
+  typedef Dune::Interface<RemoteIndicesType> InterfaceType;
+  //InterfaceType infS(riS);
+  //infS.build(ownerFlags,ghostFlags);
+
+  // create local vector al
+  typedef int ctype;
+  typedef typename std::vector<ctype> VectorType;
+  VectorType al(7,0);
+  typedef typename VectorType::iterator VectorItType;
+
+  typedef typename ParallelIndexType::iterator PIndexIterType;
+  for(PIndexIterType it=sis.begin();it!=sis.end();++it){
+    if(it->local().attribute()==owner) al[it->local().local()]=(it-sis.begin())+5*tid;
+  }
+
+  // output al
+  osmutex.lock();
+  std::cout<<"Local vector on thread "<<tid<<": al={ ";
+  for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
+  std::cout<<"}"<<std::endl;
+  osmutex.unlock();
+
+  // do something on al
+  if(tid==0) std::cout<<std::endl<<"Performing the operation al[i]+=10*(tid+1) for only the owned entries"<<std::endl<<std::endl;
+  for(PIndexIterType it=sis.begin();it!=sis.end();++it){
+    if(it->local().attribute()==owner) al[it->local().local()]+=10*(tid+1);
+  }
+
+  // output al before communication
+  osmutex.lock();
+  std::cout<<"Local vector on thread "<<tid<<": al={ ";
+  for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
+  std::cout<<"}"<<std::endl;
+  osmutex.unlock();
+
 }
 
 
 int main(int argc,char** argv){
 
-  // number of thread to use
+  // create thread communicator
   const size_t numThreads(2);
+  typedef Dune::ThreadCommunicator<numThreads> CommType;
+  CommType comm;
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;
@@ -102,55 +145,10 @@ int main(int argc,char** argv){
   // launch a group of threads to run exec()
   std::vector<std::thread> t(numThreads);
 
-  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec,tid,numThreads,std::ref(osmutex));
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<CommType>,std::ref(comm),tid,std::ref(osmutex));
   for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
 /*
-    // create interface
-    Dune::EnumItem<flags,ghost> ghostFlags;
-    Dune::EnumItem<flags,owner> ownerFlags;
-
-    typedef Dune::Interface InterfaceType;
-    InterfaceType infS(MPI_COMM_WORLD);
-    infS.build(riS,ownerFlags,ghostFlags);
-
-    // create local vector al
-    typedef int ctype;
-    typedef typename std::vector<ctype> VectorType;
-    VectorType al(7,0);
-    typedef typename VectorType::iterator VectorItType;
-
-    typedef typename ParallelIndexType::iterator PIndexIterType;
-    for(PIndexIterType it=sis.begin();it!=sis.end();++it){
-      if(it->local().attribute()==owner) al[it->local().local()]=(it-sis.begin())+5*rank;
-    }
-
-    // output al
-    for(size_t i=0;i!=size;++i){
-      if(rank==i){
-        std::cout<<"Local vector on process "<<rank<<": al={ ";
-        for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
-        std::cout<<"}"<<std::endl;
-      }
-      collCom.barrier();
-    }
-
-    // do something on al
-    if(rank==0) std::cout<<std::endl<<"Performing the operation al[i]+=10*(rank+1) for only the owned entries"<<std::endl<<std::endl;
-    for(PIndexIterType it=sis.begin();it!=sis.end();++it){
-      if(it->local().attribute()==owner) al[it->local().local()]+=10*(rank+1);
-    }
-
-    // output al before communication
-    for(size_t i=0;i!=size;++i){
-      if(rank==i){
-        std::cout<<"Local vector on process "<<rank<<": al={ ";
-        for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
-        std::cout<<"}"<<std::endl;
-      }
-      collCom.barrier();
-    }
-
     // create communicator
     typedef Dune::BufferedCommunicator CommunicatorType;
     CommunicatorType bComm;
