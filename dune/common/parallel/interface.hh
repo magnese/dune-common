@@ -198,12 +198,11 @@ namespace Dune
      * bool contains(Attribute flag) const;
      * \endcode
      * for checking whether the set contains a specfic flag. This functionality is for example provided the classes EnumItem, EnumRange and Combine.
-     * @param remoteIndices The indices known to remote processes.
      * @param sourceFlags The set of flags marking indices we send from.
      * @param destFlags The set of flags marking indices we receive for.
      */
     template<typename T1, typename T2>
-    void build(const RemoteIndicesType& remoteIndices, const T1& sourceFlags, const T2& destFlags);
+    void build(const T1& sourceFlags, const T2& destFlags);
 
     /** @brief Frees memory allocated during the build. */
     void free();
@@ -415,19 +414,17 @@ namespace Dune
 
   template<typename R>
   template<typename T1, typename T2>
-  inline void Interface<R>::build(const RemoteIndicesType& remoteIndices, const T1& sourceFlags, const T2& destFlags)
+  inline void Interface<R>::build(const T1& sourceFlags, const T2& destFlags)
   {
-    communicator_=remoteIndices.communicator();
-
     assert(interfaces_.empty());
 
     // build the seind interface
     InformationBuilder<true> sendInformation(interfaces_);
-    this->template buildInterface<R,T1,T2,InformationBuilder<true>,true>(remoteIndices, sourceFlags, destFlags, sendInformation);
+    this->template buildInterface<R,T1,T2,InformationBuilder<true>,true>(remoteindices_, sourceFlags, destFlags, sendInformation);
 
     // build the receive interface
     InformationBuilder<false> recvInformation(interfaces_);
-    this->template buildInterface<R,T1,T2,InformationBuilder<false>,false>(remoteIndices,sourceFlags, destFlags, recvInformation);
+    this->template buildInterface<R,T1,T2,InformationBuilder<false>,false>(remoteindices_,sourceFlags, destFlags, recvInformation);
     strip();
   }
 
