@@ -184,6 +184,12 @@ namespace Dune
     /** @brief The type of the map form process number to InterfaceInformation for sending and receiving to and from it. */
     typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InformationMap;
 
+    /** @brief The type of remote indices. */
+    typedef R RemoteIndicesType;
+
+    /** @brief The type of the communicator. */
+    typedef typename RemoteIndicesType::CommType CommType;
+
     /**
      * @brief Builds the interface.
      *
@@ -196,14 +202,14 @@ namespace Dune
      * @param sourceFlags The set of flags marking indices we send from.
      * @param destFlags The set of flags marking indices we receive for.
      */
-    template<typename RR, typename T1, typename T2>
-    void build(const RR& remoteIndices, const T1& sourceFlags, const T2& destFlags);
+    template<typename T1, typename T2>
+    void build(const RemoteIndicesType& remoteIndices, const T1& sourceFlags, const T2& destFlags);
 
     /** @brief Frees memory allocated during the build. */
     void free();
 
-    /** @brief Get the MPI Communicator. */
-    MPI_Comm communicator() const;
+    /** @brief Get the communicator. */
+    CommType communicator() const;
 
     /**
      * @brief Get information about the interfaces.
@@ -213,12 +219,12 @@ namespace Dune
      */
     const InformationMap& interfaces() const;
 
-    Interface(MPI_Comm comm) : communicator_(comm), interfaces_()
+    Interface(RemoteIndicesType& remoteIndices) : remoteindices_(remoteIndices), communicator_(remoteindices_.communicator()), interfaces_()
     {}
-
+/*
     Interface() : communicator_(MPI_COMM_NULL), interfaces_()
     {}
-
+*/
     /** @brief Print the interface to std::out for debugging. */
     void print() const;
 
@@ -262,8 +268,10 @@ namespace Dune
      */
     InformationMap& interfaces();
 
-    /** @brief The MPI communicator we use. */
-    MPI_Comm communicator_;
+    RemoteIndicesType& remoteindices_;
+
+    /** @brief The communicator we use. */
+    CommType communicator_;
 
   private:
     /**
@@ -360,7 +368,7 @@ namespace Dune
   }
 
   template<typename R>
-  inline MPI_Comm Interface<R>::communicator() const
+  inline typename Interface<R>::CommType Interface<R>::communicator() const
   {
     return communicator_;
 
@@ -406,8 +414,8 @@ namespace Dune
   }
 
   template<typename R>
-  template<typename RR, typename T1, typename T2>
-  inline void Interface<R>::build(const RR& remoteIndices, const T1& sourceFlags, const T2& destFlags)
+  template<typename T1, typename T2>
+  inline void Interface<R>::build(const RemoteIndicesType& remoteIndices, const T1& sourceFlags, const T2& destFlags)
   {
     communicator_=remoteIndices.communicator();
 

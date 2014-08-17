@@ -193,7 +193,7 @@ namespace Dune {
 
     typedef typename RemoteIndexMap::const_iterator const_iterator;
 
-    //TODO: need to be removed since not every paradigm has a communicator
+    /** @brief The type of the communicator. */
     typedef typename ParallelParadigm::CommType CommType;
 
     /**
@@ -281,7 +281,6 @@ namespace Dune {
      */
     inline bool isSynced() const;
 
-    //TODO: need to be removed since not every paradigm has a communicator
     inline CommType communicator() const;
 
     /** @brief Get the parallel paradigm used. */
