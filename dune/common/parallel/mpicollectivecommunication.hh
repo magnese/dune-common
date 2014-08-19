@@ -5,9 +5,7 @@
 
 /*!
    \file
-   \brief Implements an utility class that provides
-   MPI's collective communication methods.
-
+   \brief Implements an utility class that provides MPI's collective communication methods.
    \ingroup ParallelCommunication
  */
 
@@ -30,10 +28,9 @@
 namespace Dune
 {
 
-  //=======================================================
-  // use singleton pattern and template specialization to
-  // generate MPI operations
-  //=======================================================
+  //=============================================================================
+  // use singleton pattern and template specialization to generate MPI operations
+  //=============================================================================
 
   template<typename Type, typename BinaryFunction>
   class Generic_MPI_Op
@@ -65,9 +62,9 @@ namespace Dune
     static shared_ptr<MPI_Op> op;
   };
 
-
   template<typename Type, typename BinaryFunction>
   shared_ptr<MPI_Op> Generic_MPI_Op<Type,BinaryFunction>::op = shared_ptr<MPI_Op>(static_cast<MPI_Op*>(0));
+
 
 #define ComposeMPIOp(type,func,op) \
   template<> \
@@ -132,27 +129,27 @@ namespace Dune
 
 #undef ComposeMPIOp
 
-
-  //=======================================================
-  // use singleton pattern and template specialization to
-  // generate MPI operations
-  //=======================================================
+  //=============================================================================
+  // use singleton pattern and template specialization to generate MPI operations
+  //=============================================================================
 
   /*! \brief Specialization of CollectiveCommunication for MPI
-        \ingroup ParallelCommunication
+      \ingroup ParallelCommunication
    */
   template<>
   class CollectiveCommunication<MPI_Comm>
   {
   public:
     //! Instantiation using a MPI communicator
-    CollectiveCommunication (const MPI_Comm& c)
-      : communicator(c)
+    CollectiveCommunication (const MPI_Comm& c) : communicator(c)
     {
-      if(communicator!=MPI_COMM_NULL) {
+      if(communicator!=MPI_COMM_NULL)
+      {
         MPI_Comm_rank(communicator,&me);
         MPI_Comm_size(communicator,&procs);
-      }else{
+      }
+      else
+      {
         procs=0;
         me=-1;
       }
@@ -253,18 +250,14 @@ namespace Dune
     template<typename T>
     int gather (T* in, T* out, int len, int root) const
     {
-      return MPI_Gather(in,len,MPITraits<T>::getType(),
-                        out,len,MPITraits<T>::getType(),
-                        root,communicator);
+      return MPI_Gather(in,len,MPITraits<T>::getType(),out,len,MPITraits<T>::getType(),root,communicator);
     }
 
     //! @copydoc CollectiveCommunication::gatherv()
     template<typename T>
     int gatherv (T* in, int sendlen, T* out, int* recvlen, int* displ, int root) const
     {
-      return MPI_Gatherv(in,sendlen,MPITraits<T>::getType(),
-                         out,recvlen,displ,MPITraits<T>::getType(),
-                         root,communicator);
+      return MPI_Gatherv(in,sendlen,MPITraits<T>::getType(),out,recvlen,displ,MPITraits<T>::getType(),root,communicator);
     }
 
     //! @copydoc CollectiveCommunication::scatter()
@@ -272,18 +265,14 @@ namespace Dune
     template<typename T>
     int scatter (T* send, T* recv, int len, int root) const
     {
-      return MPI_Scatter(send,len,MPITraits<T>::getType(),
-                         recv,len,MPITraits<T>::getType(),
-                         root,communicator);
+      return MPI_Scatter(send,len,MPITraits<T>::getType(),recv,len,MPITraits<T>::getType(),root,communicator);
     }
 
     //! @copydoc CollectiveCommunication::scatterv()
     template<typename T>
     int scatterv (T* send, int* sendlen, int* displ, T* recv, int recvlen, int root) const
     {
-      return MPI_Scatterv(send,sendlen,displ,MPITraits<T>::getType(),
-                          recv,recvlen,MPITraits<T>::getType(),
-                          root,communicator);
+      return MPI_Scatterv(send,sendlen,displ,MPITraits<T>::getType(),recv,recvlen,MPITraits<T>::getType(),root,communicator);
     }
 
 
@@ -296,18 +285,14 @@ namespace Dune
     template<typename T, typename T1>
     int allgather(T* sbuf, int count, T1* rbuf) const
     {
-      return MPI_Allgather(sbuf, count, MPITraits<T>::getType(),
-                           rbuf, count, MPITraits<T1>::getType(),
-                           communicator);
+      return MPI_Allgather(sbuf,count,MPITraits<T>::getType(),rbuf, count, MPITraits<T1>::getType(),communicator);
     }
 
     //! @copydoc CollectiveCommunication::allgatherv()
     template<typename T>
     int allgatherv (T* in, int sendlen, T* out, int* recvlen, int* displ) const
     {
-      return MPI_Allgatherv(in,sendlen,MPITraits<T>::getType(),
-                            out,recvlen,displ,MPITraits<T>::getType(),
-                            communicator);
+      return MPI_Allgatherv(in,sendlen,MPITraits<T>::getType(),out,recvlen,displ,MPITraits<T>::getType(),communicator);
     }
 
     //! @copydoc CollectiveCommunication::allreduce(Type* inout,int len) const
@@ -325,8 +310,7 @@ namespace Dune
     template<typename BinaryFunction, typename Type>
     int allreduce(Type* in, Type* out, int len) const
     {
-      return MPI_Allreduce(in, out, len, MPITraits<Type>::getType(),
-                           (Generic_MPI_Op<Type, BinaryFunction>::get()),communicator);
+      return MPI_Allreduce(in, out, len, MPITraits<Type>::getType(),(Generic_MPI_Op<Type,BinaryFunction>::get()),communicator);
     }
 
   private:
