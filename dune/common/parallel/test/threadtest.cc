@@ -95,8 +95,8 @@ void exec(C& comm, const size_t tid, std::mutex& osmutex){
   Dune::EnumItem<flags,owner> ownerFlags;
 
   typedef Dune::Interface<RemoteIndicesType> InterfaceType;
-  //InterfaceType infS(riS);
-  //infS.build(ownerFlags,ghostFlags);
+  InterfaceType infS(riS);
+  infS.build(ownerFlags,ghostFlags);
 
   // create local vector al
   typedef int ctype;
