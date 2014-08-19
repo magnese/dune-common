@@ -4,9 +4,7 @@
 #define DUNE_COLLECTIVECOMMUNICATION_HH
 /*!
    \file
-   \brief Implements an utility class that provides
-   collective communication methods for sequential programs.
-
+   \brief Implements an utility class that provides collective communication methods for sequential programs.
    \ingroup ParallelCommunication
  */
 #include <iostream>
@@ -20,26 +18,20 @@
 
    \brief Abstractions for paralle computing
 
-   Dune offers an abstraction to the basic methods of parallel
-   communication. It allows to switch parallel features on and off,
-   without changing the code. This is done using either CollectiveCommunication
-   or MPICollectiveCommunication.
-
+   Dune offers an abstraction to the basic methods of parallel communication. It allows to switch parallel features on and off,
+   without changing the code. This is done using either CollectiveCommunication or MPICollectiveCommunication.
  */
 
 /*!
    \file
-   \brief An abstraction to the basic methods of parallel communication,
-     following the message-passing paradigm.
+   \brief An abstraction to the basic methods of parallel communication, following the message-passing paradigm.
    \ingroup ParallelCommunication
  */
 
 namespace Dune
 {
-
   /* define some type that definitely differs from MPI_Comm */
   struct No_Comm {};
-
 
   /*! @brief Collective communication interface and sequential default implementation
 
@@ -89,90 +81,69 @@ namespace Dune
       return 1;
     }
 
-    /** @brief  Compute the sum of the argument over all processes and
-            return the result in every process. Assumes that T has an operator+
-     */
+    /** @brief  Compute the sum of the argument over all processes and return the result in every process. Assumes that T has an operator+. */
     template<typename T>
     T sum (T& in) const     // MPI does not know about const :-(
     {
       return in;
     }
 
-    /** @brief Compute the sum over all processes for each component of an array and return the result
-            in every process. Assumes that T has an operator+
-     */
+    /** @brief Compute the sum over all processes for each component of an array and return the result in every process. Assumes that T has an operator+. */
     template<typename T>
     int sum (T* inout, int len) const
     {
       return 0;
     }
 
-    /** @brief  Compute the product of the argument over all processes and
-            return the result in every process. Assumes that T has an operator*
-     */
+    /** @brief  Compute the product of the argument over all processes and return the result in every process. Assumes that T has an operator*. */
     template<typename T>
     T prod (T& in) const     // MPI does not know about const :-(
     {
       return in;
     }
 
-    /** @brief Compute the product over all processes
-            for each component of an array and return the result
-            in every process. Assumes that T has an operator*
-     */
+    /** @brief Compute the product over all processes for each component of an array and return the result in every process. Assumes that T has an operator*. */
     template<typename T>
     int prod (T* inout, int len) const
     {
       return 0;
     }
 
-    /** @brief  Compute the minimum of the argument over all processes and
-            return the result in every process. Assumes that T has an operator<
-     */
+    /** @brief  Compute the minimum of the argument over all processes and return the result in every process. Assumes that T has an operator<. */
     template<typename T>
     T min (T& in) const     // MPI does not know about const :-(
     {
       return in;
     }
 
-    /** @brief Compute the minimum over all processes
-            for each component of an array and return the result
-            in every process. Assumes that T has an operator<
-     */
+    /** @brief Compute the minimum over all processes for each component of an array and return the result in every process. Assumes that T has an operator<. */
     template<typename T>
     int min (T* inout, int len) const
     {
       return 0;
     }
 
-    /** @brief  Compute the maximum of the argument over all processes and
-            return the result in every process. Assumes that T has an operator<
-     */
+    /** @brief  Compute the maximum of the argument over all processes and return the result in every process. Assumes that T has an operator<. */
     template<typename T>
     T max (T& in) const     // MPI does not know about const :-(
     {
       return in;
     }
 
-    /** @brief Compute the maximum over all processes
-            for each component of an array and return the result
-            in every process. Assumes that T has an operator<
-     */
+    /** @brief Compute the maximum over all processes for each component of an array and return the result in every process. Assumes that T has an operator<. */
     template<typename T>
     int max (T* inout, int len) const
     {
       return 0;
     }
 
-    /** @brief Wait until all processes have arrived at this point in the program.
-     */
+    /** @brief Wait until all processes have arrived at this point in the program. */
     int barrier () const
     {
       return 0;
     }
 
-    /** @brief Distribute an array from the process with rank root to all other processes
-     */
+    /** @brief Distribute an array from the process with rank root to all other processes. */
     template<typename T>
     int broadcast (T* inout, int len, int root) const
     {

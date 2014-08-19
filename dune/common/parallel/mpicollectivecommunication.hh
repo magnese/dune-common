@@ -275,6 +275,10 @@ namespace Dune
       return MPI_Scatterv(send,sendlen,displ,MPITraits<T>::getType(),recv,recvlen,MPITraits<T>::getType(),root,communicator);
     }
 
+    operator const MPI_Comm& () const
+    {
+      return communicator;
+    }
 
     operator MPI_Comm () const
     {
