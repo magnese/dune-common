@@ -45,7 +45,7 @@ public:
 
 // function run by each thread
 template<class C>
-void exec(C& comm, const size_t tid, std::mutex& osmutex){
+void exec(C& colComm, const size_t tid, std::mutex& osmutex){
 
   // define parallel local index and parallel index set
   enum flags{owner,ghost};
@@ -75,9 +75,9 @@ void exec(C& comm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create parallel paradigm
-  typedef C CommunicatorType;
-  typedef Dune::ThreadParadigm<ParallelIndexType,CommunicatorType> ParallelParadigmType;
-  ParallelParadigmType pp(comm,tid);
+  typedef C ColCommType;
+  typedef Dune::ThreadParadigm<ParallelIndexType,ColCommType> ParallelParadigmType;
+  ParallelParadigmType pp(colComm,tid);
 
   // set remote indices
   typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
@@ -95,8 +95,8 @@ void exec(C& comm, const size_t tid, std::mutex& osmutex){
   Dune::EnumItem<flags,owner> ownerFlags;
 
   typedef Dune::Interface<RemoteIndicesType> InterfaceType;
-  //InterfaceType infS(riS);
-  //infS.build(ownerFlags,ghostFlags);
+  InterfaceType infS(riS);
+  infS.build(ownerFlags,ghostFlags);
 
   // create local vector al
   typedef int ctype;
@@ -136,8 +136,10 @@ int main(int argc,char** argv){
 
   // create thread communicator
   const size_t numThreads(2);
-  typedef Dune::ThreadCommunicator<numThreads> CommType;
+  typedef Dune::THREAD_Comm<numThreads> CommType;
   CommType comm;
+  typedef Dune::ThreadCollectiveCommunication<CommType,numThreads> ColCommType;
+  ColCommType colComm(comm);
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;
@@ -145,7 +147,7 @@ int main(int argc,char** argv){
   // launch a group of threads to run exec()
   std::vector<std::thread> t(numThreads);
 
-  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<CommType>,std::ref(comm),tid,std::ref(osmutex));
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<ColCommType>,std::ref(colComm),tid,std::ref(osmutex));
   for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
 /*
