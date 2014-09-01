@@ -998,9 +998,10 @@ namespace Dune
       bufferSize_[1] += noRecv;
     }
 
+    // allocate the buffers
     bufferSize_[0] *= indexedTypeSize;
     bufferSize_[1] *= indexedTypeSize;
-    // allocate the buffers
+
     buffers_[0] = new char[bufferSize_[0]];
     buffers_[1] = new char[bufferSize_[1]];
   }
@@ -1282,7 +1283,6 @@ namespace Dune
     delete[] processMap;
     delete[] sendRequests;
     delete[] recvRequests;
-
   }
 
 #endif  // DOXYGEN
