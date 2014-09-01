@@ -93,20 +93,13 @@ namespace Dune
    * @author Marco Agnese, Markus Blatt
    */
 
-  /**
-   * @brief Flag for marking indexed data structures where data at each index is of the same size.
-   * @see VariableSize
-   */
+  /** @brief Flag for marking indexed data structures where data at each index is of the same size. */
   struct SizeOne
   {};
 
-  /**
-   * @brief Flag for marking indexed data structures where the data at each index may be a variable multiple of another type.
-   * @see SizeOne
-   */
+  /** @brief Flag for marking indexed data structures where the data at each index may be a variable multiple of another type. */
   struct VariableSize
   {};
-
 
   /** @brief Default policy used for communicating an indexed type. */
   template<class V>
@@ -174,9 +167,8 @@ namespace Dune
 
   /**
    * @brief An utility class for communicating distributed data structures via MPI datatypes.
-   * This communicator creates special MPI datatypes that address the non contiguous elements
-   * to be send and received. The idea was to prevent the copying to an additional buffer and
-   * the mpi implementation decide whether to allocate buffers or use buffers offered by the
+   * This communicator creates special MPI datatypes that address the non contiguous elements to be send and received.
+   * The idea was to prevent the copying to an additional buffer and the mpi implementation decide whether to allocate buffers or use buffers offered by the
    * interconnection network. Unfortunately the implementation of MPI datatypes seems to be poor. Therefore for most MPI
    * implementations using a BufferedCommunicator will be more efficient.
    */
@@ -755,8 +747,8 @@ namespace Dune
   {
     remoteIndices_ = &remoteIndices;
     free();
-    createDataTypes<T1,T2,V,false>(source,destination, receiveData);
-    createDataTypes<T1,T2,V,true>(source,destination, sendData);
+    createDataTypes<T1,T2,V,false>(source, destination, receiveData);
+    createDataTypes<T1,T2,V,true>(source, destination, sendData);
     createRequests<V,true>(sendData, receiveData);
     createRequests<V,false>(receiveData, sendData);
     created_=true;
