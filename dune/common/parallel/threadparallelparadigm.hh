@@ -27,15 +27,8 @@ namespace Dune {
    */
 
   /** @brief The communicator for thread. */
-  template<size_t numThreads = 1>
   class THREAD_Comm
   {
-    public:
-      THREAD_Comm() : size(numThreads)
-      {}
-
-      /** @brief Number of threads. */
-      const size_t size;
   };
 
   /** @brief ThreadCommunicator allows communication between threads using shared memeory. */

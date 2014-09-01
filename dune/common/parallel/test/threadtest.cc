@@ -136,7 +136,7 @@ int main(int argc,char** argv){
 
   // create thread communicator
   const size_t numThreads(2);
-  typedef Dune::THREAD_Comm<numThreads> CommType;
+  typedef Dune::THREAD_Comm CommType;
   CommType comm;
   typedef Dune::ThreadCollectiveCommunication<CommType,numThreads> ColCommType;
   ColCommType colComm(comm);
