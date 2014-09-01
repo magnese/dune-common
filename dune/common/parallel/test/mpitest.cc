@@ -156,9 +156,9 @@ int main(int argc,char** argv){
     }
 
     // create communicator
-    typedef Dune::BufferedCommunicator CommunicatorType;
-    CommunicatorType bComm;
-    bComm.build(al,al,infS);
+    typedef Dune::BufferedCommunicator<InterfaceType> CommunicatorType;
+    CommunicatorType bComm(infS);
+    bComm.build(al,al);
 
     // communicate
     if(rank==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
