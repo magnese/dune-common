@@ -489,8 +489,7 @@ namespace Dune
   private:
 
     /** @brief The type of the map that maps interface information to processors. */
-    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >
-    InterfaceMap;
+    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
     /** @brief Functors for message size caculation. */
     template<class Data, typename IndexedTypeFlag>
@@ -946,8 +945,7 @@ namespace Dune
   {
     interfaces_=interface.interfaces();
     communicator_=interface.communicator();
-    typedef typename std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >
-    ::const_iterator const_iterator;
+    typedef typename std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >::const_iterator const_iterator;
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     const const_iterator end = interfaces_.end();
     int lrank;
@@ -956,8 +954,8 @@ namespace Dune
     bufferSize_[0]=0;
     bufferSize_[1]=0;
 
-    for(const_iterator interfacePair = interfaces_.begin();
-        interfacePair != end; ++interfacePair) {
+    for(const_iterator interfacePair = interfaces_.begin(); interfacePair != end; ++interfacePair)
+    {
       int noSend = MessageSizeCalculator<Data,Flag>() (interfacePair->second.first);
       int noRecv = MessageSizeCalculator<Data,Flag>() (interfacePair->second.second);
       if (noSend + noRecv > 0)
@@ -982,8 +980,7 @@ namespace Dune
 
     interfaces_=interface.interfaces();
     communicator_=interface.communicator();
-    typedef typename std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >
-    ::const_iterator const_iterator;
+    typedef typename std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >::const_iterator const_iterator;
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     const const_iterator end = interfaces_.end();
 
@@ -1045,7 +1042,6 @@ namespace Dune
       entries += CommPolicy<Data>::getSize(data,info[i]);
     return entries;
   }
-
 
   template<class Data, class GatherScatter, bool FORWARD>
   inline void BufferedCommunicator::MessageGatherer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces,const Data& data, Type* buffer, size_t bufferSize) const
