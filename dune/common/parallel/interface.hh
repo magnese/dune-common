@@ -61,7 +61,6 @@ namespace Dune
      * \code
      * // Reserve memory for the interface to processor proc. The interface has to hold size entries
      * void reserve(int proc, int size);
-     *
      * // Add an entry to the interface. We will send/receive size entries at index local to process proc
      * void add(int proc, int local);
      * \endcode
@@ -218,12 +217,17 @@ namespace Dune
      */
     const InformationMap& interfaces() const;
 
+    /**
+     * @brief Get information about the interfaces.
+     *
+     * @return Map of the interfaces.
+     * The key of the map is the process number and the value is the information pair (first the send and then the receive information).
+     */
+    InformationMap& interfaces();
+
     Interface(RemoteIndicesType& remoteIndices) : remoteindices_(remoteIndices), communicator_(remoteindices_.communicator()), interfaces_()
     {}
-/*
-    Interface() : communicator_(MPI_COMM_NULL), interfaces_()
-    {}
-*/
+
     /** @brief Print the interface to std::out for debugging. */
     void print() const;
 
@@ -258,20 +262,10 @@ namespace Dune
 
     void strip();
   protected:
-
-    /**
-     * @brief Get information about the interfaces.
-     *
-     * @return Map of the interfaces.
-     * The key of the map is the process number and the value is the information pair (first the send and then the receive information).
-     */
-    InformationMap& interfaces();
-
     RemoteIndicesType& remoteindices_;
 
     /** @brief The communicator we use. */
     CommType communicator_;
-
   private:
     /**
      * @brief Information about the interfaces.
@@ -294,13 +288,13 @@ namespace Dune
         else
           interfaces_[proc].second.reserve(size);
       }
+
       void add(int proc, std::size_t local)
       {
-        if(send) {
+        if(send)
           interfaces_[proc].first.add(local);
-        }else{
+        else
           interfaces_[proc].second.add(local);
-        }
       }
 
     private:
@@ -366,17 +360,16 @@ namespace Dune
   inline typename Interface<R>::CommType Interface<R>::communicator() const
   {
     return communicator_;
-
   }
 
   template<typename R>
-  inline const std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface<R>::interfaces() const
+  inline const typename Interface<R>::InformationMap& Interface<R>::interfaces() const
   {
     return interfaces_;
   }
 
   template<typename R>
-  inline std::map<int,std::pair<InterfaceInformation,InterfaceInformation> >& Interface<R>::interfaces()
+  inline typename Interface<R>::InformationMap& Interface<R>::interfaces()
   {
     return interfaces_;
   }
@@ -471,10 +464,10 @@ namespace std
     for(Iter i=interface.interfaces().begin(); i!=end; ++i)
     {
       os<<i->first<<": [ source=[";
-      for(std::size_t j=0; j < i->second.first.size(); ++j)
+      for(size_t j=0; j < i->second.first.size(); ++j)
         os<<i->second.first[j]<<" ";
       os<<"] size="<<i->second.first.size()<<", target=[";
-      for(std::size_t j=0; j < i->second.second.size(); ++j)
+      for(size_t j=0; j < i->second.second.size(); ++j)
         os<<i->second.second[j]<<" ";
       os<<"] size="<<i->second.second.size()<<"\n";
     }
