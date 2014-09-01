@@ -237,7 +237,8 @@ namespace Dune
     /** @brief Deallocates the MPI requests and data types. */
     void free();
   private:
-    enum {
+    enum
+    {
       /** @brief Tag for the MPI communication. */
       commTag_ = 234
     }; //TODO: why not use a simple static variable?
@@ -365,8 +366,7 @@ namespace Dune
      * @param interface The interface that defines what indices are to be communicated.
      */
     template<class Data, class Interface>
-    typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type
-    build(const Interface& interface);
+    typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type build(const Interface& interface);
 
     /**
      * @brief Build the buffers and information for the communication process.
@@ -381,27 +381,23 @@ namespace Dune
      * @brief Send from source to target.
      *
      * The template parameter GatherScatter (e.g. CopyGatherScatter) has to have a static method
+     *
      * \code
      * // Gather the data at index index of data
      * static const typename CommPolicy<Data>::IndexedType>& gather(Data& data, int index);
-     *
      * // Scatter the value at a index of data
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne
-     * and
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne and
      *
      * \code
      * static const typename CommPolicy<Data>::IndexedType> gather(Data& data, int index, int subindex);
-     *
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index, int subindex);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index, int subindex);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the
-     * subindex of the block at index.
-     * @warning The source and target data have to have the same layout as the ones given
-     * to the build function in case of variable size values at the indices.
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
+     * @warning The source and target data have to have the same layout as the ones given to the build function in case of variable size values at the indices.
      * @param source The values will be copied from here to the send buffers.
      * @param dest The received values will be copied to here.
      */
@@ -412,27 +408,22 @@ namespace Dune
      * @brief Communicate in the reverse direction, i.e. send from target to source.
      *
      * The template parameter GatherScatter (e.g. CopyGatherScatter) has to have a static method
+     *
      * \code
      * // Gather the data at index index of data
      * static const typename CommPolicy<Data>::IndexedType>& gather(Data& data, int index);
-     *
      * // Scatter the value at a index of data
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne
-     * and
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne and
      *
      * \code
      * static onst typename CommPolicy<Data>::IndexedType> gather(Data& data, int index, int subindex);
-     *
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index, int subindex);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index, int subindex);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the
-     * subindex of the block at index.
-     * @warning The source and target data have to have the same layout as the ones given
-     * to the build function in case of variable size values at the indices.
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
+     * @warning The source and target data have to have the same layout as the ones given to the build function in case of variable size values at the indices.
      * @param dest The values will be copied from here to the send buffers.
      * @param source The received values will be copied to here.
      */
@@ -443,25 +434,22 @@ namespace Dune
      * @brief Forward send where target and source are the same.
      *
      * The template parameter GatherScatter has to have a static method
+     *
      * \code
      * // Gather the data at index index of data
      * static const typename CommPolicy<Data>::IndexedType>& gather(Data& data, int index);
-     *
      * // Scatter the value at a index of data
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne
-     * and
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne and
      *
      * \code
      * static onst typename CommPolicy<Data>::IndexedType> gather(Data& data, int index, int subindex);
-     *
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index, int subindex);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index, int subindex);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the
-     * subindex of the block at index.
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @param data Source and target of the communication.
      */
     template<class GatherScatter, class Data>
@@ -471,25 +459,22 @@ namespace Dune
      * @brief Backward send where target and source are the same.
      *
      * The template parameter GatherScatter has to have a static method
+     *
      * \code
      * // Gather the data at index index of data
      * static const typename CommPolicy<Data>::IndexedType>& gather(Data& data, int index);
-     *
      * // Scatter the value at a index of data
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne
-     * and
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is SizeOne and
      *
      * \code
      * static onst typename CommPolicy<Data>::IndexedType> gather(Data& data, int index, int subindex);
-     *
-     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value,
-     *                     int index, int subindex);
+     * static void scatter(Data& data, typename CommPolicy<Data>::IndexedType> value, int index, int subindex);
      * \endcode
-     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the
-     * subindex of the block at index.
+     *
+     * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @param data Source and target of the communication.
      */
     template<class GatherScatter, class Data>
@@ -560,7 +545,8 @@ namespace Dune
       /** @brief The type of the functor that does the actual copying during the data Scattering. */
       typedef GatherScatter Gatherer;
 
-      enum {
+      enum
+      {
         /** @brief The communication mode. True if this was a forward communication. */
         forward=send
       };
@@ -585,7 +571,8 @@ namespace Dune
       /** @brief The type of the functor that does the actual copying during the data Scattering. */
       typedef GatherScatter Gatherer;
 
-      enum {
+      enum
+      {
         /** @brief The communication mode. True if this was a forward communication. */
         forward=send
       };
@@ -615,7 +602,8 @@ namespace Dune
       /** @brief The type of the functor that does the actual copying during the data Scattering. */
       typedef GatherScatter Scatterer;
 
-      enum {
+      enum
+      {
         /** @brief The communication mode. True if this was a forward communication. */
         forward=send
       };
@@ -640,7 +628,8 @@ namespace Dune
       /** @brief The type of the functor that does the actual copying during the data Scattering. */
       typedef GatherScatter Scatterer;
 
-      enum {
+      enum
+      {
         /** @brief The communication mode. True if this was a forward communication. */
         forward=send
       };
@@ -681,8 +670,7 @@ namespace Dune
      * @brief Type of the map of information about the messages to send.
      * The key is the process number to communicate with and the value is the pair of information about sending and receiving messages.
      */
-    typedef std::map<int,std::pair<MessageInformation,MessageInformation> >
-    InformationMap;
+    typedef std::map<int,std::pair<MessageInformation,MessageInformation> > InformationMap;
 
     /** @brief Gathered information about the messages to send. */
     InformationMap messageInformation_;
@@ -693,7 +681,8 @@ namespace Dune
     /** @brief The size of the communication buffers. */
     size_t bufferSize_[2];
 
-    enum {
+    enum
+    {
       /** @brief The tag we use for communication. */
       commTag_
     };
@@ -706,7 +695,6 @@ namespace Dune
     /** @brief Send and receive Data. */
     template<class GatherScatter, bool FORWARD, class Data>
     void sendRecv(const Data& source, Data& target);
-
   };
 
 #ifndef DOXYGEN
