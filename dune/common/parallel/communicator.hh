@@ -1052,11 +1052,12 @@ namespace Dune
   template<class Data, class GatherScatter, bool FORWARD>
   inline void BufferedCommunicator<I>::MessageGatherer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces,const Data& data, Type* buffer, size_t bufferSize) const
   {
-    typedef typename InterfaceMap::const_iterator
-    const_iterator;
+#ifdef DUNE_ISTL_WITH_CHECKING
+    typedef typename CommPolicy<Data>::IndexedType IndexedType;
+    const size_t indexedTypeSize = sizeof(IndexedType);
+#endif
+    typedef typename InterfaceMap::const_iterator const_iterator;
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     const const_iterator end = interfaces.end();
     size_t index=0;
 
@@ -1069,7 +1070,7 @@ namespace Dune
         for(std::size_t j=0; j < CommPolicy<Data>::getSize(data, local); j++, index++)
         {
 #ifdef DUNE_ISTL_WITH_CHECKING
-          assert(bufferSize>=(index+1)*sizeof(typename CommPolicy<Data>::IndexedType));
+          assert(bufferSize>=(index+1)*indexedTypeSize);
 #endif
           buffer[index]=GatherScatter::gather(data, local, j);
         }
@@ -1082,14 +1083,14 @@ namespace Dune
   template<class Data, class GatherScatter, bool FORWARD>
   inline void BufferedCommunicator<I>::MessageGatherer<Data,GatherScatter,FORWARD,SizeOne>::operator()(const InterfaceMap& interfaces, const Data& data, Type* buffer, size_t bufferSize) const
   {
+#ifdef DUNE_ISTL_WITH_CHECKING
+    typedef typename CommPolicy<Data>::IndexedType IndexedType;
+    const size_t indexedTypeSize = sizeof(IndexedType);
+#endif
     DUNE_UNUSED_PARAMETER(bufferSize);
-    typedef typename InterfaceMap::const_iterator
-    const_iterator;
+    typedef typename InterfaceMap::const_iterator const_iterator;
     const const_iterator end = interfaces.end();
     size_t index = 0;
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     for(const_iterator interfacePair = interfaces.begin(); interfacePair != end; ++interfacePair)
     {
@@ -1097,7 +1098,7 @@ namespace Dune
       for(size_t i=0; i < size; i++)
       {
 #ifdef DUNE_ISTL_WITH_CHECKING
-        assert(bufferSize>=(index+1)*sizeof(typename CommPolicy<Data>::IndexedType));
+        assert(bufferSize>=(index+1)*indexedTypeSize);
 #endif
         buffer[index++] = GatherScatter::gather(data, FORWARD ? interfacePair->second.first[i] : interfacePair->second.second[i]);
       }
@@ -1174,8 +1175,11 @@ namespace Dune
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_rank(MPI_COMM_WORLD,&lrank);
 
-    typedef typename CommPolicy<Data>::IndexedType Type;
-    Type *sendBuffer, *recvBuffer;
+    typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
+    typedef typename CommPolicy<Data>::IndexedType IndexedType;
+    const size_t indexedTypeSize = sizeof(IndexedType);
+
+    IndexedType *sendBuffer, *recvBuffer;
     size_t sendBufferSize;
 #ifndef NDEBUG
     size_t recvBufferSize;
@@ -1183,23 +1187,22 @@ namespace Dune
 
     if(FORWARD)
     {
-      sendBuffer = reinterpret_cast<Type*>(buffers_[0]);
+      sendBuffer = reinterpret_cast<IndexedType*>(buffers_[0]);
       sendBufferSize = bufferSize_[0];
-      recvBuffer = reinterpret_cast<Type*>(buffers_[1]);
+      recvBuffer = reinterpret_cast<IndexedType*>(buffers_[1]);
 #ifndef NDEBUG
       recvBufferSize = bufferSize_[1];
 #endif
     }
     else
     {
-      sendBuffer = reinterpret_cast<Type*>(buffers_[1]);
+      sendBuffer = reinterpret_cast<IndexedType*>(buffers_[1]);
       sendBufferSize = bufferSize_[1];
-      recvBuffer = reinterpret_cast<Type*>(buffers_[0]);
+      recvBuffer = reinterpret_cast<IndexedType*>(buffers_[0]);
 #ifndef NDEBUG
       recvBufferSize = bufferSize_[0];
 #endif
     }
-    typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
 
     MessageGatherer<Data,GatherScatter,FORWARD,Flag>() (interfaces_, source, sendBuffer, sendBufferSize);
 
@@ -1218,13 +1221,13 @@ namespace Dune
       processMap[i]=info->first;
       if(FORWARD)
       {
-        assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= recvBufferSize );
+        assert(info->second.second.start_*indexedTypeSize+info->second.second.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": receiving "<<info->second.second.size_<<" from "<<info->first<<std::endl;
         MPI_Irecv(recvBuffer+info->second.second.start_, info->second.second.size_, MPI_BYTE, info->first, commTag_, communicator_, recvRequests+i);
       }
       else
       {
-        assert(info->second.first.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.first.size_ <= recvBufferSize );
+        assert(info->second.first.start_*indexedTypeSize+info->second.first.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": receiving "<<info->second.first.size_<<" to "<<info->first<<std::endl;
         MPI_Irecv(recvBuffer+info->second.first.start_, info->second.first.size_, MPI_BYTE, info->first, commTag_, communicator_, recvRequests+i);
       }
@@ -1235,14 +1238,14 @@ namespace Dune
     for(const_iterator info = messageInformation_.begin(); info != end; ++info, ++i)
       if(FORWARD)
       {
-        assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= recvBufferSize );
+        assert(info->second.second.start_*indexedTypeSize+info->second.second.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": sending "<<info->second.first.size_<<" to "<<info->first<<std::endl;
-        assert(info->second.first.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.first.size_ <= sendBufferSize );
+        assert(info->second.first.start_*indexedTypeSize+info->second.first.size_ <= sendBufferSize );
         MPI_Issend(sendBuffer+info->second.first.start_, info->second.first.size_, MPI_BYTE, info->first, commTag_, communicator_, sendRequests+i);
       }
       else
       {
-        assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= sendBufferSize );
+        assert(info->second.second.start_*indexedTypeSize+info->second.second.size_ <= sendBufferSize );
         Dune::dvverb<<rank<<": sending "<<info->second.second.size_<<" to "<<info->first<<std::endl;
         MPI_Issend(sendBuffer+info->second.second.start_, info->second.second.size_, MPI_BYTE, info->first, commTag_, communicator_, sendRequests+i);
       }
