@@ -284,7 +284,7 @@ namespace Dune {
     inline CommType communicator() const;
 
     /** @brief Get the parallel paradigm used. */
-    inline const ParallelParadigm& parallelParadigm() const;
+    inline ParallelParadigm& parallelParadigm() const;
 
     /**
      * @brief Get a modifier for a remote index list.
@@ -890,7 +890,7 @@ namespace Dune {
   }
 
   template<typename T, typename A>
-  inline const T& RemoteIndices<T,A>::parallelParadigm() const
+  inline T& RemoteIndices<T,A>::parallelParadigm() const
   {
     return parallel_;
   }
