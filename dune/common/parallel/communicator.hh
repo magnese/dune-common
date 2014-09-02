@@ -826,14 +826,12 @@ namespace Dune
   void DatatypeCommunicator<T>::createRequests(V& sendData, V& receiveData)
   {
     typedef std::map<int,std::pair<MPI_Datatype,MPI_Datatype> >::const_iterator MapIterator;
-    int rank;
     static int index = createForward ? 1 : 0;
     int noMessages = messageTypes.size();
     // allocate request handles
     requests_[index] = new MPI_Request[2*noMessages];
     const MapIterator end = messageTypes.end();
     int request=0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // set up the requests for receiving first
     for(MapIterator process = messageTypes.begin(); process != end; ++process, ++request)
@@ -1170,10 +1168,8 @@ namespace Dune
   template<class GatherScatter, bool FORWARD, class Data>
   void BufferedCommunicator<I>::sendRecv(const Data& source, Data& dest)
   {
-    int rank, lrank;
-
+    int rank;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_rank(MPI_COMM_WORLD,&lrank);
 
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     typedef typename CommPolicy<Data>::IndexedType IndexedType;
