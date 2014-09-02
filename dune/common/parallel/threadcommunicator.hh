@@ -7,7 +7,7 @@
 
 #include <vector>
 #include <set>
-
+#include <algorithm>
 // #include "remoteindices.hh"
 // #include "interface.hh"
 // #include <dune/common/exceptions.hh>
@@ -56,17 +56,9 @@ namespace Dune
     ThreadCommunicator(InterfaceType& interface);
 
     /**
-     * @brief Build the buffers and information for the communication process.
-     * @param source The source in a forward send. The values will be copied from here to the send buffers.
-     * @param target The target in a forward send. The received values will be copied to here.
-     */
-    //template<class Data>
-    //void build(const Data& source, const Data& target);
-
-    /**
      * @brief Send from source to target.
      *
-     * The template parameter GatherScatter (e.g. CopyGatherScatter) has to have a static method
+     * The template parameter GatherScatter has to have a static method
      *
      * \code
      * // Gather the data at index index of data
@@ -84,16 +76,16 @@ namespace Dune
      *
      * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @warning The source and target data have to have the same layout as the ones given to the build function in case of variable size values at the indices.
-     * @param source The values will be copied from here to the send buffers.
-     * @param dest The received values will be copied to here.
+     * @param source The values will be send from here.
+     * @param target The received values will be copied to here.
      */
-    //template<class GatherScatter, class Data>
-    //void forward(const Data& source, Data& dest);
+    template<class GatherScatter, class Data>
+    void forward(const Data& source, Data& target);
 
     /**
      * @brief Communicate in the reverse direction, i.e. send from target to source.
      *
-     * The template parameter GatherScatter (e.g. CopyGatherScatter) has to have a static method
+     * The template parameter GatherScatter has to have a static method
      *
      * \code
      * // Gather the data at index index of data
@@ -110,11 +102,11 @@ namespace Dune
      * \endcode
      * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @warning The source and target data have to have the same layout as the ones given to the build function in case of variable size values at the indices.
-     * @param dest The values will be copied from here to the send buffers.
-     * @param source The received values will be copied to here.
+     * @param source The values will be send from here.
+     * @param source The target values will be copied to here.
      */
-    //template<class GatherScatter, class Data>
-    //void backward(Data& source, const Data& dest);
+    template<class GatherScatter, class Data>
+    void backward(Data& source, const Data& target);
 
     /**
      * @brief Forward send where target and source are the same.
@@ -138,8 +130,8 @@ namespace Dune
      * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @param data Source and target of the communication.
      */
-    //template<class GatherScatter, class Data>
-    //void forward(Data& data);
+    template<class GatherScatter, class Data>
+    void forward(Data& data);
 
     /**
      * @brief Backward send where target and source are the same.
@@ -163,11 +155,8 @@ namespace Dune
      * in the case where CommPolicy<Data>::IndexedTypeFlag is VariableSize. Here subindex is the subindex of the block at index.
      * @param data Source and target of the communication.
      */
-    //template<class GatherScatter, class Data>
-    //void backward(Data& data);
-
-    /** @brief Free the allocated memory (i.e. buffers and message information. */
-    //void free();
+    template<class GatherScatter, class Data>
+    void backward(Data& data);
 
     /** @brief Destructor. */
     ~ThreadCommunicator()
@@ -180,12 +169,16 @@ namespace Dune
 
     CommType communicator_;
 
+    std::vector<int> colors_;
+
+    unsigned int numcolors_;
+
     /** @brief Compute the coloring scheme.*/
     void computeColoring();
 
     /** @brief Send and receive Data. */
-    //template<class GatherScatter, bool FORWARD, class Data>
-    //void sendRecv(const Data& source, Data& target);
+    template<class GatherScatter, bool FORWARD, class Data>
+    void sendRecv(const Data& source, Data& target);
   };
 
   /** @} */
@@ -194,6 +187,34 @@ namespace Dune
   inline ThreadCommunicator<I>::ThreadCommunicator(InterfaceType& interface) : interface_(interface), interfaces_(interface_.interfaces()), communicator_(interface_.communicator())
   {
     computeColoring();
+  }
+
+  template<typename I>
+  template<typename GatherScatter,typename Data>
+  void ThreadCommunicator<I>::forward(Data& data)
+  {
+    this->template sendRecv<GatherScatter,true>(data, data);
+  }
+
+  template<typename I>
+  template<typename GatherScatter, typename Data>
+  void ThreadCommunicator<I>::backward(Data& data)
+  {
+    this->template sendRecv<GatherScatter,false>(data, data);
+  }
+
+  template<typename I>
+  template<typename GatherScatter, typename Data>
+  void ThreadCommunicator<I>::forward(const Data& source, Data& target)
+  {
+    this->template sendRecv<GatherScatter,true>(source, target);
+  }
+
+  template<typename I>
+  template<typename GatherScatter, typename Data>
+  void ThreadCommunicator<I>::backward(Data& source, const Data& target)
+  {
+    this->template sendRecv<GatherScatter,false>(target, source);
   }
 
   template<typename I>
@@ -206,14 +227,55 @@ namespace Dune
     const size_t numThreads = parallelParadigm.numThreads();
     const size_t tid = parallelParadigm.threadID();
 
-    // compute adiajency matrix of the graph rappresenting the interaction between threads
-    std::vector<int> adjMatrix(numThreads,-1);
-    // create buffer to communicate neighbours
-    colComm.template createBuffer<std::set<int>>();
-    colComm.template setBuffer<std::set<int>>(remoteIndices.getNeighbours(), tid);
+    colors_.clear();
+    colors_.resize(numThreads, -1);
+    colors_[0] = 0;
 
-    colComm.template deleteBuffer<std::set<int>>();
+    if(numThreads > 1)
+    {
+      // compute adiajency matrix of the graph rappresenting the interaction between threads
+      std::vector<std::vector<int>> adjMatrix(numThreads,std::vector<int>(numThreads,-1));
+      // create buffer to communicate neighbours
+      const std::set<int>* neighboursPtr = &(remoteIndices.getNeighbours());
+      colComm.template createBuffer<const std::set<int>*>();
+      colComm.template setBuffer<const std::set<int>*>(neighboursPtr, tid);
 
+      typedef typename std::set<int>::iterator SetIterType;
+      for(size_t i = 0; i != numThreads; ++i)
+      {
+        const std::set<int>* ptr = (colComm.template getBuffer<const std::set<int>*>())[i];
+        SetIterType itEnd = ptr->end();
+        for(SetIterType it = ptr->begin(); it != itEnd; ++it)
+          adjMatrix[i][*it] = 1;
+      }
+      colComm.template deleteBuffer<const std::set<int>*>();
+
+      // compute colouring with a greedy algorithm
+      for(size_t i = 1; i != numThreads; ++i)
+      {
+        int color = 0;
+        for(size_t j = 0; j != numThreads; ++j)
+        {
+          if(adjMatrix[i][j] == 1)
+          {
+            if(colors_[j] > -1)
+            {
+              color = std::max(color,colors_[j]+1);
+            }
+          }
+        }
+        colors_[i] = color;
+      }
+
+    }
+
+    numcolors_ = *(std::max_element(colors_.begin(),colors_.end()))+1;
+  }
+
+  template<typename I>
+  template<typename GatherScatter, bool FORWARD, typename Data>
+  void ThreadCommunicator<I>::sendRecv(const Data& source, Data& target)
+  {
   }
 
 }
