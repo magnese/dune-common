@@ -5,6 +5,9 @@
 #ifndef DUNE_THREADCOMMUNICATOR
 #define DUNE_THREADCOMMUNICATOR
 
+#include <vector>
+#include <set>
+
 // #include "remoteindices.hh"
 // #include "interface.hh"
 // #include <dune/common/exceptions.hh>
@@ -36,6 +39,9 @@ namespace Dune
 
     /** @brief The type of the parallel paradigm we use. */
     typedef typename RemoteIndicesType::ParallelParadigm ParallelParadigm;
+
+    /** @brief The type of the collective communication. */
+    typedef typename ParallelParadigm::CollectiveCommunicationType CollectiveCommunicationType;
 
     /** @brief The type of the map that maps interface information to processors. */
     typedef typename InterfaceType::InformationMap InterfaceMap;
@@ -194,6 +200,20 @@ namespace Dune
   void ThreadCommunicator<I>::computeColoring()
   {
     RemoteIndicesType& remoteIndices = interface_.remoteIndices();
+    ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
+    CollectiveCommunicationType& colComm = parallelParadigm.collCommunicator();
+
+    const size_t numThreads = parallelParadigm.numThreads();
+    const size_t tid = parallelParadigm.threadID();
+
+    // compute adiajency matrix of the graph rappresenting the interaction between threads
+    std::vector<int> adjMatrix(numThreads,-1);
+    // create buffer to communicate neighbours
+    colComm.template createBuffer<std::set<int>>();
+    colComm.template setBuffer<std::set<int>>(remoteIndices.getNeighbours(), tid);
+
+    colComm.template deleteBuffer<std::set<int>>();
+
   }
 
 }

@@ -157,6 +157,9 @@ namespace Dune {
     /** @brief Get the number of threads. */
     inline size_t numThreads() const;
 
+    /** @brief Get the collective communicator. */
+    inline CollectiveCommunicationType& collCommunicator() const;
+
     /** @brief Get the communicator. */
     inline CommType communicator();
 
@@ -299,6 +302,12 @@ namespace Dune {
   inline size_t ThreadParadigm<T,C>::numThreads() const
   {
     return colcomm_.size();
+  }
+
+  template<typename T,typename C>
+  inline typename ThreadParadigm<T,C>::CollectiveCommunicationType& ThreadParadigm<T,C>::collCommunicator() const
+  {
+    return colcomm_;
   }
 
   template<typename T,typename C>
