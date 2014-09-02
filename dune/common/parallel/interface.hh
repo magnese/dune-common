@@ -207,6 +207,9 @@ namespace Dune
     void free();
 
     /** @brief Get the communicator. */
+    RemoteIndicesType& remoteIndices() const;
+
+    /** @brief Get the communicator. */
     CommType communicator() const;
 
     /**
@@ -354,6 +357,12 @@ namespace Dune
         ++remote;
       }
     }
+  }
+
+  template<typename R>
+  inline typename Interface<R>::RemoteIndicesType& Interface<R>::remoteIndices() const
+  {
+    return remoteindices_;
   }
 
   template<typename R>
