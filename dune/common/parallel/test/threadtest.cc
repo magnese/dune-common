@@ -132,22 +132,18 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   // create communicator
   typedef Dune::ThreadCommunicator<InterfaceType> CommunicatorType;
   CommunicatorType tComm(infS);
-  //tComm.build(al,al);
 
   // communicate
-  //if(tid==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
-  //tComm.forward<CopyData<VectorType>>(al,al);
+  if(tid==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
+  tComm.template forward<CopyData<VectorType>>(al,al);
 
-/*
   // output al after communication
   osmutex.lock();
   std::cout<<"Local vector on thread "<<tid<<": al={ ";
   for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
   std::cout<<"}"<<std::endl;
   osmutex.unlock();
-*/
 }
-
 
 int main(int argc,char** argv){
 

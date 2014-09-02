@@ -212,7 +212,6 @@ namespace Dune {
     return comm_;
   }
 
-
   //TODO: FIX ME! sometimes it leads to a segmentaiton fault (I think)
   template<typename C,size_t numThreads>
   inline void ThreadCollectiveCommunication<C,numThreads>::barrier()
