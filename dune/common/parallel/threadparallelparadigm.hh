@@ -154,7 +154,10 @@ namespace Dune {
     /** @brief Get the thread ID. */
     inline size_t threadID() const;
 
-   /** @brief Get the communicator. */
+    /** @brief Get the number of threads. */
+    inline size_t numThreads() const;
+
+    /** @brief Get the communicator. */
     inline CommType communicator();
 
     //! \todo Please finsih to doc me.
@@ -290,6 +293,12 @@ namespace Dune {
   inline size_t ThreadParadigm<T,C>::threadID() const
   {
     return tid_;
+  }
+
+  template<typename T,typename C>
+  inline size_t ThreadParadigm<T,C>::numThreads() const
+  {
+    return colcomm_.size();
   }
 
   template<typename T,typename C>

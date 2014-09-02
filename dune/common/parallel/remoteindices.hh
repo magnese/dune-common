@@ -148,10 +148,10 @@ namespace Dune {
   class RemoteIndices
   {
   public:
-    /** @brief Type of the parallel paradigm we use, e.g. MPIParadigm. */
+    /** @brief The type of the parallel paradigm we use, e.g. MPIParadigm. */
     typedef T ParallelParadigm;
 
-    /** @brief Type of the index set we use, e.g. ParallelLocalIndexSet. */
+    /** @brief The type of the index set we use, e.g. ParallelLocalIndexSet. */
     typedef typename ParallelParadigm::ParallelIndexSet ParallelIndexSet;
 
   private:

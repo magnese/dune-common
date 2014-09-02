@@ -15,7 +15,7 @@
 #include <dune/common/parallel/threadparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-//#include <dune/common/parallel/communicator.hh>
+#include <dune/common/parallel/threadcommunicator.hh>
 
 // policy: copy
 template<typename T>
@@ -129,6 +129,23 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   std::cout<<"}"<<std::endl;
   osmutex.unlock();
 
+  // create communicator
+  typedef Dune::ThreadCommunicator<InterfaceType> CommunicatorType;
+  CommunicatorType tComm(infS);
+  //tComm.build(al,al);
+
+  // communicate
+  //if(tid==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
+  //tComm.forward<CopyData<VectorType>>(al,al);
+
+/*
+  // output al after communication
+  osmutex.lock();
+  std::cout<<"Local vector on thread "<<tid<<": al={ ";
+  for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
+  std::cout<<"}"<<std::endl;
+  osmutex.unlock();
+*/
 }
 
 
@@ -150,26 +167,5 @@ int main(int argc,char** argv){
   for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<ColCommType>,std::ref(colComm),tid,std::ref(osmutex));
   for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
-/*
-    // create communicator
-    typedef Dune::BufferedCommunicator CommunicatorType;
-    CommunicatorType bComm;
-    bComm.build(al,al,infS);
-
-    // communicate
-    if(rank==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
-    bComm.forward<CopyData<VectorType>>(al,al);
-
-    // output al after communication
-    for(size_t i=0;i!=size;++i){
-      if(rank==i){
-        std::cout<<"Local vector on process "<<rank<<": al={ ";
-        for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
-        std::cout<<"}"<<std::endl;
-      }
-      collCom.barrier();
-    }
-*/
   return 0;
-
 }
