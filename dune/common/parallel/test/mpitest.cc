@@ -118,6 +118,15 @@ int main(int argc,char** argv){
     InterfaceType infS(riS);
     infS.build(ownerFlags,ghostFlags);
 
+    // output infS
+    for(size_t i=0;i!=size;++i){
+      if(rank==i){
+        std::cout<<"Interface on process "<<rank<<":"<<std::endl;
+        infS.print();
+      }
+      collCom.barrier();
+    }
+
     // create local vector al
     typedef int ctype;
     typedef typename std::vector<ctype> VectorType;

@@ -98,6 +98,12 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   InterfaceType infS(riS);
   infS.build(ownerFlags,ghostFlags);
 
+  // output infS
+  osmutex.lock();
+  std::cout<<"Interface on thread "<<tid<<":"<<std::endl;
+  infS.print();
+  osmutex.unlock();
+
   // create local vector al
   typedef int ctype;
   typedef typename std::vector<ctype> VectorType;
