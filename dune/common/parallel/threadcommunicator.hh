@@ -8,6 +8,7 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <utility>
 // #include "remoteindices.hh"
 // #include "interface.hh"
 // #include <dune/common/exceptions.hh>
@@ -276,6 +277,49 @@ namespace Dune
   template<typename GatherScatter, bool FORWARD, typename Data>
   void ThreadCommunicator<I>::sendRecv(const Data& source, Data& target)
   {
+    RemoteIndicesType& remoteIndices = interface_.remoteIndices();
+    ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
+    CollectiveCommunicationType& colComm = parallelParadigm.collCommunicator();
+
+    //const size_t numThreads = parallelParadigm.numThreads();
+    const size_t tid = parallelParadigm.threadID();
+
+    // create the buffer to communicate data
+    typedef std::pair<const Data*,Data*> DataPairType;
+    colComm.template createBuffer<DataPairType>();
+    colComm.template setBuffer<DataPairType>(DataPairType(&source,&target), tid);
+
+    if(FORWARD)
+    {
+      for(int color = 0; color != numcolors_ ; ++color)
+      {
+        if(colors_[tid] == color)
+        {
+          typedef typename InterfaceMap::const_iterator const_iterator;
+          const const_iterator itEnd = interfaces_.end();
+          for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
+          {
+            size_t size = it->second.first.size();
+            //const Data& data = *(((colComm.template getBuffer<DataPairType>())[it->first]).first);
+            //const Data& data = source;
+            const Data& dest = *(((colComm.template getBuffer<DataPairType>())[it->first]).second);
+            for(size_t i=0; i < size; i++)
+            {
+              std::cout<<"gather_"<<GatherScatter::gather(source,it->second.first[i])<<"_tid_"<<tid<<std::endl;
+              std::cout<<"scatter_"<<GatherScatter::gather(dest,it->second.second[i])<<"_tid_"<<tid<<std::endl;
+              //GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),it->second.second[i]);
+            }
+          }
+        }
+        colComm.barrier();
+      }
+    }
+    else
+    {
+    }
+
+    colComm.template deleteBuffer<DataPairType>();
+
   }
 
 }
