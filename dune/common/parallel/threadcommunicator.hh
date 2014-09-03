@@ -163,6 +163,7 @@ namespace Dune
     ~ThreadCommunicator()
     {}
   private:
+
     InterfaceType& interface_;
 
     /** @brief The interface we currently work with. */
@@ -314,15 +315,10 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.first.size();
-            const Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).target);
+            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).target);
             const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).interfaces)->find(tid);
-
             for(size_t i=0; i < size; i++)
-            {
-              std::cout<<"gather_"<<GatherScatter::gather(source,it->second.first[i])<<"_tid_"<<tid<<std::endl;
-              std::cout<<"scatter_"<<GatherScatter::gather(dest,itDest->second.second[i])<<"_tid_"<<tid<<std::endl;
-              //GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),itDest->second.second[i]);
-            }
+              GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),itDest->second.second[i]);
           }
         }
         colComm.barrier();
@@ -330,6 +326,22 @@ namespace Dune
     }
     else
     {
+      for(int color = 0; color != numcolors_ ; ++color)
+      {
+        if(colors_[tid] == color)
+        {
+          const_iterator itEnd = interfaces_.end();
+          for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
+          {
+            size_t size = it->second.second.size();
+            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).target);
+            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).interfaces)->find(tid);
+            for(size_t i=0; i < size; i++)
+              GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.second[i]),itDest->second.first[i]);
+          }
+        }
+        colComm.barrier();
+      }
     }
 
     colComm.template deleteBuffer<BufferType>();
