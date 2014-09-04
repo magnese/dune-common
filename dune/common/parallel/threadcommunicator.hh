@@ -187,6 +187,9 @@ namespace Dune
       InterfaceBuffer() : source(nullptr), target(nullptr), interfaces(nullptr)
       {}
 
+      ~InterfaceBuffer()
+      {}
+
       const Data* source;
       Data* target;
       const InterfaceMap* interfaces;
@@ -345,8 +348,8 @@ namespace Dune
     }
 
     colComm.template deleteBuffer<BufferType>();
-
   }
+
 
 }
 
