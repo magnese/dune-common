@@ -82,9 +82,6 @@ namespace Dune {
       /** @brief Flag used by std::call_once function. */
       std::once_flag bufferflag_;
 
-      /** @brief Status of the buffer. */
-      bool bufferready_;
-
       /** @brief Pointer to the buffer. */
       void* bufferptr_;
 
@@ -196,8 +193,7 @@ namespace Dune {
   /** @} */
 
   template<typename C,size_t numThreads>
-  inline ThreadCollectiveCommunication<C,numThreads>::ThreadCollectiveCommunication(CommType comm) : comm_(comm), size_(numThreads), bufferready_(false),
-                                                                                                     bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
+  inline ThreadCollectiveCommunication<C,numThreads>::ThreadCollectiveCommunication(CommType comm) : comm_(comm), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
   template<typename C,size_t numThreads>
@@ -212,7 +208,6 @@ namespace Dune {
     return comm_;
   }
 
-  //TODO: FIX ME! sometimes it leads to a segmentaiton fault (I think)
   template<typename C,size_t numThreads>
   inline void ThreadCollectiveCommunication<C,numThreads>::barrier()
   {
@@ -238,7 +233,6 @@ namespace Dune {
   inline void ThreadCollectiveCommunication<C,numThreads>::createBuffer_()
   {
     bufferptr_ = new std::array<T,numThreads>();
-    bufferready_ = true;
   }
 
   template<typename C,size_t numThreads>
@@ -252,9 +246,9 @@ namespace Dune {
   template<typename T>
   inline void ThreadCollectiveCommunication<C,numThreads>::setBuffer(const T& value, const size_t& tid)
   {
-    while(!bufferready_);
+    barrier(); // checkpoint: the buffer is allocated
     (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
-    barrier(); // syncronization
+    barrier(); // checkpoitn: the buffer is set
   }
 
   template<typename C,size_t numThreads>
@@ -268,16 +262,16 @@ namespace Dune {
   template<typename T>
   inline void ThreadCollectiveCommunication<C,numThreads>::deleteBuffer_()
   {
-    bufferready_ = false;
     delete static_cast<std::array<T,numThreads>*>(bufferptr_);
-    bufferptr_ = nullptr;
   }
 
   template<typename C,size_t numThreads>
   template<typename T>
   inline void ThreadCollectiveCommunication<C,numThreads>::deleteBuffer()
   {
+    barrier(); // checkpoint: the buffer isn't needed anymore
     std::call_once(bufferflag_,&ThreadCollectiveCommunication<C,numThreads>::deleteBuffer_<T>,this);
+    barrier(); // checkpoint: the buffer is free
   }
 
   template<typename T,typename C>
