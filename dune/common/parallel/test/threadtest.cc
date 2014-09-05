@@ -45,7 +45,7 @@ public:
 
 // function run by each thread
 template<class C>
-void exec(C& colComm, const size_t tid, std::mutex& osmutex){
+void exec(C& collComm, const size_t tid, std::mutex& osmutex){
 
   // define parallel local index and parallel index set
   enum flags{owner,ghost};
@@ -75,9 +75,8 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create parallel paradigm
-  typedef C ColCommType;
-  typedef Dune::ThreadParadigm<ParallelIndexType,ColCommType> ParallelParadigmType;
-  ParallelParadigmType pp(colComm,tid);
+  typedef Dune::ThreadParadigm<ParallelIndexType,C> ParallelParadigmType;
+  ParallelParadigmType pp(collComm,tid);
 
   // set remote indices
   typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
@@ -136,12 +135,12 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create communicator
-  typedef Dune::Communicator<Dune::ThreadCommunicator<InterfaceType>> CommunicatorType;
-  CommunicatorType tComm(infS);
+  typedef Dune::Communicator<Dune::ThreadCommunicator<InterfaceType>> DuneCommunicator;
+  DuneCommunicator duneComm(infS);
 
   // communicate
   if(tid==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
-  tComm.template forward<CopyData<VectorType>>(al,al);
+  duneComm.template forward<CopyData<VectorType>>(al,al);
 
   // output al after communication
   osmutex.lock();
@@ -157,8 +156,8 @@ int main(int argc,char** argv){
   const size_t numThreads(2);
   typedef Dune::THREAD_Comm CommType;
   CommType comm;
-  typedef Dune::ThreadCollectiveCommunication<CommType,numThreads> ColCommType;
-  ColCommType colComm(comm);
+  typedef Dune::ThreadCollectiveCommunication<CommType,numThreads> CollectiveCommunication;
+  CollectiveCommunication collComm(comm);
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;
@@ -166,7 +165,7 @@ int main(int argc,char** argv){
   // launch a group of threads to run exec()
   std::vector<std::thread> t(numThreads);
 
-  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<ColCommType>,std::ref(colComm),tid,std::ref(osmutex));
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<CollectiveCommunication>,std::ref(collComm),tid,std::ref(osmutex));
   for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
   return 0;

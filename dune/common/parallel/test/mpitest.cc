@@ -50,11 +50,11 @@ int main(int argc,char** argv){
 
   // init MPI
   MPI_Init(&argc,&argv);
-  Dune::CollectiveCommunication<MPI_Comm> collCom(MPI_COMM_WORLD);
+  Dune::CollectiveCommunication<MPI_Comm> collComm(MPI_COMM_WORLD);
 
   // get size and rank
-  size_t size(collCom.size());
-  size_t rank(collCom.rank());
+  size_t size(collComm.size());
+  size_t rank(collComm.rank());
 
   // 2 processes
   if(size>2){
@@ -89,7 +89,7 @@ int main(int argc,char** argv){
         std::cout<<"s"<<rank<<":"<<std::endl;
         std::cout<<sis<<std::endl<<std::endl;
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
     // create parallel paradigm
@@ -107,7 +107,7 @@ int main(int argc,char** argv){
         std::cout<<"ris"<<rank<<":"<<std::endl;
         std::cout<<riS<<std::endl;
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
     // create interface
@@ -124,7 +124,7 @@ int main(int argc,char** argv){
         std::cout<<"Interface on process "<<rank<<":"<<std::endl;
         infS.print();
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
     // create local vector al
@@ -145,7 +145,7 @@ int main(int argc,char** argv){
         for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
         std::cout<<"}"<<std::endl;
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
     // do something on al
@@ -161,17 +161,17 @@ int main(int argc,char** argv){
         for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
         std::cout<<"}"<<std::endl;
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
     // create communicator
-    typedef Dune::BufferedCommunicator<InterfaceType> CommunicatorType;
-    CommunicatorType bComm(infS);
-    bComm.build(al,al);
+    typedef Dune::Communicator<Dune::MPICommunicator<InterfaceType>> DuneCommunicator;
+    DuneCommunicator duneComm(infS);
+    duneComm.build(al,al);
 
     // communicate
     if(rank==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
-    bComm.forward<CopyData<VectorType>>(al,al);
+    duneComm.forward<CopyData<VectorType>>(al,al);
 
     // output al after communication
     for(size_t i=0;i!=size;++i){
@@ -180,7 +180,7 @@ int main(int argc,char** argv){
         for(VectorItType it=al.begin();it!=al.end();++it) std::cout<<*it<<" ";
         std::cout<<"}"<<std::endl;
       }
-      collCom.barrier();
+      collComm.barrier();
     }
 
   }
