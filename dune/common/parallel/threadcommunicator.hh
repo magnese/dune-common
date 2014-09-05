@@ -100,7 +100,7 @@ namespace Dune
   {
     RemoteIndicesType& remoteIndices = interface_.remoteIndices();
     ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
-    CollectiveCommunicationType& colComm = parallelParadigm.collCommunicator();
+    CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
 
     const size_t numThreads = parallelParadigm.numThreads();
     const size_t tid = parallelParadigm.threadID();
@@ -115,18 +115,18 @@ namespace Dune
       std::vector<std::vector<int>> adjMatrix(numThreads,std::vector<int>(numThreads,-1));
       // create buffer to communicate neighbours
       const std::set<int>* neighboursPtr = &(remoteIndices.getNeighbours());
-      colComm.template createBuffer<const std::set<int>*>();
-      colComm.template setBuffer<const std::set<int>*>(neighboursPtr, tid);
+      collComm.template createBuffer<const std::set<int>*>();
+      collComm.template setBuffer<const std::set<int>*>(neighboursPtr, tid);
 
       typedef typename std::set<int>::iterator SetIterType;
       for(size_t i = 0; i != numThreads; ++i)
       {
-        const std::set<int>* ptr = (colComm.template getBuffer<const std::set<int>*>())[i];
+        const std::set<int>* ptr = (collComm.template getBuffer<const std::set<int>*>())[i];
         SetIterType itEnd = ptr->end();
         for(SetIterType it = ptr->begin(); it != itEnd; ++it)
           adjMatrix[i][*it] = 1;
       }
-      colComm.template deleteBuffer<const std::set<int>*>();
+      collComm.template deleteBuffer<const std::set<int>*>();
 
       // compute colouring with a greedy algorithm
       for(size_t i = 1; i != numThreads; ++i)
@@ -156,7 +156,9 @@ namespace Dune
   {
     RemoteIndicesType& remoteIndices = interface_.remoteIndices();
     ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
-    CollectiveCommunicationType& colComm = parallelParadigm.collCommunicator();
+    CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
+
+    typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
 
     typedef typename InterfaceMap::const_iterator const_iterator;
 
@@ -164,8 +166,8 @@ namespace Dune
 
     // create the buffer to communicate data
     typedef std::pair<Data*,const InterfaceMap*> BufferType;
-    colComm.template createBuffer<BufferType>();
-    colComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), tid);
+    collComm.template createBuffer<BufferType>();
+    collComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), tid);
 
     if(FORWARD)
     {
@@ -177,13 +179,13 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.first.size();
-            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
+            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
               GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),itDest->second.second[i]);
           }
         }
-        colComm.barrier();
+        collComm.barrier();
       }
     }
     else
@@ -196,17 +198,17 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.second.size();
-            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
+            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
               GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.second[i]),itDest->second.first[i]);
           }
         }
-        colComm.barrier();
+        collComm.barrier();
       }
     }
 
-    colComm.template deleteBuffer<BufferType>();
+    collComm.template deleteBuffer<BufferType>();
   }
 
 
