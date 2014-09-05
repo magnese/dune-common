@@ -263,6 +263,7 @@ namespace Dune {
   inline void ThreadCollectiveCommunication<C,numThreads>::deleteBuffer_()
   {
     delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+    bufferptr_ = nullptr;
   }
 
   template<typename C,size_t numThreads>
