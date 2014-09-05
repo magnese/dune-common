@@ -15,7 +15,7 @@
 #include <dune/common/parallel/mpiparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/communicator.hh>
+#include <dune/common/parallel/mpicommunicator.hh>
 
 // policy: copy
 template<typename T>

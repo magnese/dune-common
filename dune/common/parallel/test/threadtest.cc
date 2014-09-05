@@ -136,7 +136,7 @@ void exec(C& colComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create communicator
-  typedef Dune::ThreadCommunicator<InterfaceType> CommunicatorType;
+  typedef Dune::Communicator<Dune::ThreadCommunicator<InterfaceType>> CommunicatorType;
   CommunicatorType tComm(infS);
 
   // communicate
