@@ -299,44 +299,6 @@ namespace Dune
     ~Communicator();
 
   private:
-    /** @brief Functors for message size caculation. */
-    template<class Data, typename IndexedTypeFlag>
-    struct MessageSizeCalculator
-    {};
-
-    /** @brief Functor for message size caculation for datatypes where at each index is only one value. */
-    template<class Data>
-    struct MessageSizeCalculator<Data,SizeOne>
-    {
-      /**
-       * @brief Calculate the number of values in message
-       * @param info The information about the interface corresponding to the message.
-       * @return The number of values in th message.
-       */
-      inline int operator()(const InterfaceInformation& info) const;
-
-      /**
-       * @brief Calculate the number of values in message
-       * @param info The information about the interface corresponding to the message.
-       * @param data ignored.
-       * @return The number of values in th message.
-       */
-      inline int operator()(const Data& data, const InterfaceInformation& info) const;
-    };
-
-    /** @brief Functor for message size caculation for datatypes where at each index can be a variable number of values. */
-    template<class Data>
-    struct MessageSizeCalculator<Data,VariableSize>
-    {
-      /**
-       * @brief Calculate the number of values in message
-       * @param info The information about the interface corresponding to the message.
-       * @param data A representative of the data we send.
-       * @return The number of values in th message.
-       */
-      inline int operator()(const Data& data, const InterfaceInformation& info) const;
-    };
-
     /** @brief The communicator implementation. */
     CommunicatorImplementation commimp_;
 
@@ -411,30 +373,6 @@ namespace Dune
   inline Communicator<Imp>::~Communicator()
   {
     free();
-  }
-
-  template<typename Imp>
-  template<typename Data>
-  inline int Communicator<Imp>::MessageSizeCalculator<Data,SizeOne>::operator()(const InterfaceInformation& info) const
-  {
-    return info.size();
-  }
-
-  template<typename Imp>
-  template<typename Data>
-  inline int Communicator<Imp>::MessageSizeCalculator<Data,SizeOne>::operator()(const Data&, const InterfaceInformation& info) const
-  {
-    return operator()(info);
-  }
-
-  template<typename Imp>
-  template<typename Data>
-  inline int Communicator<Imp>::MessageSizeCalculator<Data,VariableSize>::operator()(const Data& data, const InterfaceInformation& info) const
-  {
-    int entries=0;
-    for(size_t i=0; i < info.size(); i++)
-      entries += CommPolicy<Data>::getSize(data,info[i]);
-    return entries;
   }
 
   template<typename Imp>
