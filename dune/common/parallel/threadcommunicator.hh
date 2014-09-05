@@ -178,23 +178,6 @@ namespace Dune
     /** @brief Compute the coloring scheme.*/
     void computeColoring();
 
-    template<class Data>
-    struct InterfaceBuffer
-    {
-      InterfaceBuffer(const Data* s, Data* t, const InterfaceMap* i) : source(s), target(t), interfaces(i)
-      {}
-
-      InterfaceBuffer() : source(nullptr), target(nullptr), interfaces(nullptr)
-      {}
-
-      ~InterfaceBuffer()
-      {}
-
-      const Data* source;
-      Data* target;
-      const InterfaceMap* interfaces;
-    };
-
     /** @brief Send and receive Data. */
     template<class GatherScatter, bool FORWARD, class Data>
     void sendRecv(const Data& source, Data& target);
@@ -304,9 +287,9 @@ namespace Dune
     const size_t tid = parallelParadigm.threadID();
 
     // create the buffer to communicate data
-    typedef InterfaceBuffer<Data> BufferType;
+    typedef std::pair<Data*,const InterfaceMap*> BufferType;
     colComm.template createBuffer<BufferType>();
-    colComm.template setBuffer<BufferType>(BufferType(&source,&target,&interfaces_), tid);
+    colComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), tid);
 
     if(FORWARD)
     {
@@ -318,8 +301,8 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.first.size();
-            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).target);
-            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).interfaces)->find(tid);
+            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
               GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),itDest->second.second[i]);
           }
@@ -337,8 +320,8 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.second.size();
-            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).target);
-            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).interfaces)->find(tid);
+            Data& dest = *(((colComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((colComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
               GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.second[i]),itDest->second.first[i]);
           }
