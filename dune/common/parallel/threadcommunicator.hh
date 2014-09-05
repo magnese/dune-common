@@ -85,6 +85,27 @@ namespace Dune
 
     /** @brief Compute the coloring scheme.*/
     void computeColoring();
+
+    /** @brief  Functors to update the values in the target. */
+    template<class Data, class GatherScatter,typename IndexedTypeFlag>
+    struct Updater
+    {};
+
+    /** @brief Functor specialization for SizeOne. */
+    template<class Data, class GatherScatter>
+    struct Updater<Data,GatherScatter,SizeOne>
+    {
+      inline void operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target);
+    };
+
+    /** @brief Functor specialization for VariableSize. */
+    template<class Data, class GatherScatter>
+    struct Updater<Data,GatherScatter,VariableSize>
+    {
+      inline void operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target);
+    };
+
+
   };
 
   /** @} */
@@ -151,6 +172,21 @@ namespace Dune
   }
 
   template<typename I>
+  template<typename Data, typename GatherScatter>
+  inline void ThreadCommunicator<I>::Updater<Data,GatherScatter,SizeOne>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  {
+    GatherScatter::scatter(target,GatherScatter::gather(source,idxSource),idxTarget);
+  }
+
+  template<typename I>
+  template<typename Data, typename GatherScatter>
+  inline void ThreadCommunicator<I>::Updater<Data,GatherScatter,VariableSize>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  {
+    for(size_t j = 0; j != CommPolicy<Data>::getSize(source,idxSource); ++j)
+      GatherScatter::scatter(target,GatherScatter::gather(source,idxSource,j),idxTarget,j);
+  }
+
+  template<typename I>
   template<typename GatherScatter, bool FORWARD, typename Data>
   void ThreadCommunicator<I>::sendRecv(const Data& source, Data& target)
   {
@@ -159,6 +195,7 @@ namespace Dune
     CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
 
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
+    Updater<Data,GatherScatter,Flag> updater;
 
     typedef typename InterfaceMap::const_iterator const_iterator;
 
@@ -182,7 +219,7 @@ namespace Dune
             Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
             const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
-              GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.first[i]),itDest->second.second[i]);
+              updater(it->second.first[i],source,itDest->second.second[i],dest);
           }
         }
         collComm.barrier();
@@ -201,7 +238,7 @@ namespace Dune
             Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
             const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
             for(size_t i=0; i < size; i++)
-              GatherScatter::scatter(dest,GatherScatter::gather(source,it->second.second[i]),itDest->second.first[i]);
+              updater(it->second.second[i],source,itDest->second.first[i],dest);
           }
         }
         collComm.barrier();
