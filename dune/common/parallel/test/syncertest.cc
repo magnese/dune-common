@@ -4,6 +4,7 @@
 
 #if HAVE_MPI
 
+#include <dune/common/parallel/mpiparallelparadigm.hh>
 #include <dune/common/parallel/indicessyncer.hh>
 #include <dune/common/sllist.hh>
 #include <string>
@@ -13,14 +14,13 @@ enum GridFlags {
   owner, overlap, border
 };
 
-template<typename T>
-void deleteOverlapEntries(T& indices,
-                          Dune::RemoteIndices<T>& remoteIndices)
+template<typename T, typename R>
+void deleteOverlapEntries(T& indices, R& remoteIndices)
 {
   typedef typename T::iterator IndexIterator;
   typedef typename T::GlobalIndex GlobalIndex;
   typedef typename T::LocalIndex::Attribute Attribute;
-  typedef Dune::RemoteIndices<T> RemoteIndices;
+  typedef R RemoteIndices;
   typedef typename RemoteIndices::RemoteIndexList::ModifyIterator RemoteModifier;
   typedef typename RemoteIndices::RemoteIndexList::const_iterator RemoteIterator;
   typedef Dune::SLList<std::pair<GlobalIndex,Attribute>, typename RemoteIndices::RemoteIndexList::Allocator> GlobalList;
@@ -115,14 +115,11 @@ void deleteOverlapEntries(T& indices,
 }
 
 
-template<typename T>
-bool areEqual(T& indices,
-              Dune::RemoteIndices<T>& remoteIndices,
-              T& oIndices,
-              Dune::RemoteIndices<T>& oRemoteIndices){
+template<typename T, typename R>
+bool areEqual(T& indices, R& remoteIndices, T& oIndices, R& oRemoteIndices){
 
   typedef typename T::iterator IndexIterator;
-  typedef Dune::RemoteIndices<T> RemoteIndices;
+  typedef R RemoteIndices;
   typedef typename RemoteIndices::RemoteIndexList::iterator RemoteIterator;
 
   IndexIterator iEnd = indices.end();
@@ -186,15 +183,13 @@ bool areEqual(T& indices,
   return ret;
 }
 
-template<typename T>
-void addFakeRemoteIndices(T& indices,
-                          T& oIndices,
-                          Dune::RemoteIndices<T>& remoteIndices,
-                          Dune::RemoteIndices<T>& oRemoteIndices){
+template<typename T, typename R>
+void addFakeRemoteIndices(T& indices, T& oIndices, R& remoteIndices, R& oRemoteIndices){
   typedef typename T::iterator IndexIterator;
   typedef typename T::GlobalIndex GlobalIndex;
   typedef typename T::LocalIndex::Attribute Attribute;
-  typedef typename Dune::RemoteIndices<T>::RemoteIndexList RemoteIndexList;
+  typedef R RemoteIndices;
+  typedef typename RemoteIndices::RemoteIndexList RemoteIndexList;
   assert(remoteIndices.neighbours()==0 && oRemoteIndices.neighbours()==0);
 
   RemoteIndexList* rlist = new RemoteIndexList();
@@ -284,12 +279,15 @@ bool testIndicesSyncer()
   indexSet.endResize();
   changedIndexSet.endResize();
 
-  Dune::RemoteIndices<ParallelIndexSet> remoteIndices(indexSet, indexSet, MPI_COMM_WORLD);
-  Dune::RemoteIndices<ParallelIndexSet> changedRemoteIndices(changedIndexSet, changedIndexSet, MPI_COMM_WORLD);
+  typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
+  ParallelParadigmType pp(MPI_COMM_WORLD);
+
+  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
+  RemoteIndicesType remoteIndices(indexSet, indexSet, pp);
+  RemoteIndicesType changedRemoteIndices(changedIndexSet, changedIndexSet, pp);
 
   remoteIndices.rebuild<false>();
   changedRemoteIndices.rebuild<false>();
-
 
   std::cout<<rank<<": Unchanged: "<<indexSet<<std::endl<<remoteIndices<<std::endl;
   assert(areEqual(indexSet, remoteIndices,changedIndexSet, changedRemoteIndices));
@@ -302,7 +300,7 @@ bool testIndicesSyncer()
   deleteOverlapEntries(changedIndexSet, changedRemoteIndices);
   std::cout<<rank<<": Changed:   "<<changedIndexSet<<std::endl<<changedRemoteIndices<<std::endl;
 
-  Dune::IndicesSyncer<ParallelIndexSet> syncer(changedIndexSet, changedRemoteIndices);
+  Dune::IndicesSyncer<RemoteIndicesType> syncer(changedIndexSet, changedRemoteIndices);
   //  return 0;
 
   std::cout<<"Syncing!"<<std::endl;

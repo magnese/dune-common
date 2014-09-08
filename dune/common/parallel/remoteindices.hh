@@ -50,9 +50,8 @@ namespace Dune {
     template<typename T>
     friend class IndicesSyncer;
 
-    template<typename T, typename A, typename A1>
-    friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T::GlobalIndex, typename T::LocalIndex::Attribute>,A> >&,
-                                         RemoteIndices<T,A1>&, const T&);
+    template<typename T, typename A, typename R>
+    friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T::GlobalIndex, typename T::LocalIndex::Attribute>,A> >&, R&, const T&);
 
     template<typename T, typename A, bool mode>
     friend class RemoteIndexListModifier;
@@ -105,6 +104,7 @@ namespace Dune {
     bool operator==(const RemoteIndex& ri) const;
 
     bool operator!=(const RemoteIndex& ri) const;
+
   private:
     /** @brief The corresponding local index for this process. */
     const PairType* localIndex_;
@@ -155,18 +155,17 @@ namespace Dune {
     typedef typename ParallelParadigm::ParallelIndexSet ParallelIndexSet;
 
   private:
+    typedef RemoteIndices<T,A> ThisType;
     friend class InterfaceBuilder;
-    friend class IndicesSyncer<ParallelIndexSet>;
-    template<typename T1, typename A2, typename A1>
-    friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T1::GlobalIndex, typename T1::LocalIndex::Attribute>,A2> >&,
-                                         RemoteIndices<T1,A1>&, const T1&);
+    friend class IndicesSyncer<ThisType>;
+    template<typename T1, typename A2, typename R>
+    friend void repairLocalIndexPointers(std::map<int,SLList<std::pair<typename T1::GlobalIndex, typename T1::LocalIndex::Attribute>,A2> >&, R&, const T1&);
 
     template<class G, class T1, class T2>
     friend void fillIndexSetHoles(const G& graph, OwnerOverlapCopyCommunication<T1,T2>& oocomm);
     friend std::ostream& operator<<<>(std::ostream&, const RemoteIndices<T>&);
 
   public:
-
     /** @brief The type of the collective iterator over all remote indices. */
     typedef CollectiveIterator<ParallelIndexSet,A> CollectiveIteratorT;
 
@@ -396,7 +395,6 @@ namespace Dune {
      * @return the number of indices marked as public.
      */
     inline int noPublic(const ParallelIndexSet& indexSet);
-
   };
 
   /** @} */
@@ -890,28 +888,25 @@ namespace Dune {
   }
 
   template<typename T, typename A>
-  inline T& RemoteIndices<T,A>::parallelParadigm() const
+  inline typename RemoteIndices<T,A>::ParallelParadigm& RemoteIndices<T,A>::parallelParadigm() const
   {
     return parallel_;
   }
 
   template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::find(int proc) const
+  inline typename RemoteIndices<T,A>::const_iterator RemoteIndices<T,A>::find(int proc) const
   {
     return remoteIndices_.find(proc);
   }
 
   template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::begin() const
+  inline typename RemoteIndices<T,A>::const_iterator RemoteIndices<T,A>::begin() const
   {
     return remoteIndices_.begin();
   }
 
   template<typename T, typename A>
-  inline typename RemoteIndices<T,A>::const_iterator
-  RemoteIndices<T,A>::end() const
+  inline typename RemoteIndices<T,A>::const_iterator RemoteIndices<T,A>::end() const
   {
     return remoteIndices_.end();
   }
@@ -1074,7 +1069,7 @@ namespace Dune {
   template<bool send>
   inline typename RemoteIndices<T,A>::CollectiveIteratorT RemoteIndices<T,A>::iterator() const
   {
-    return CollectiveIterator<T,A>(remoteIndices_, send);
+    return CollectiveIteratorT(remoteIndices_, send);
   }
 
   template<typename T, typename A>
@@ -1195,8 +1190,7 @@ namespace Dune {
   }
 
   template<typename T, typename A>
-  inline typename CollectiveIterator<T,A>::iterator
-  CollectiveIterator<T,A>::begin()
+  inline typename CollectiveIterator<T,A>::iterator CollectiveIterator<T,A>::begin()
   {
     if(noattribute)
       return iterator(map_.begin(), map_.end(), index_);
@@ -1205,8 +1199,7 @@ namespace Dune {
   }
 
   template<typename T, typename A>
-  inline typename CollectiveIterator<T,A>::iterator
-  CollectiveIterator<T,A>::end()
+  inline typename CollectiveIterator<T,A>::iterator CollectiveIterator<T,A>::end()
   {
     return iterator(map_.end(), map_.end(), index_);
   }

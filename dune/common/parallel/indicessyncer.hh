@@ -40,9 +40,14 @@ namespace Dune
   class IndicesSyncer
   {
   public:
+    /** @brief Type of the underlying remote indices class. */
+    typedef T RemoteIndices;
 
-    /** @brief The type of the index set. */
-    typedef T ParallelIndexSet;
+    /** @brief The type of the parallel paradigm we use, e.g. MPIParadigm. */
+    typedef typename RemoteIndices::ParallelParadigm ParallelParadigm;
+
+    /** @brief Type of the index set. */
+    typedef typename RemoteIndices::ParallelIndexSet ParallelIndexSet;
 
     /** @brief The type of the index pair */
     typedef typename ParallelIndexSet::IndexPair IndexPair;
@@ -52,11 +57,6 @@ namespace Dune
 
     /** @brief Type of the attribute used in the index set. */
     typedef typename ParallelIndexSet::LocalIndex::Attribute Attribute;
-
-    /**
-     * @brief Type of the remote indices.
-     */
-    typedef Dune::RemoteIndices<ParallelIndexSet> RemoteIndices;
 
     /**
      * @brief Constructor.
@@ -488,15 +488,16 @@ namespace Dune
    * @param remoteIndices The known remote indices.
    * @param indexSet The set of local indices of the current process.
    */
-  template<typename T, typename A, typename A1>
+  template<typename T, typename A, typename R>
   inline void repairLocalIndexPointers(std::map<int,
                                            SLList<std::pair<typename T::GlobalIndex,
                                                    typename T::LocalIndex::Attribute>,A> >& globalMap,
-                                       RemoteIndices<T,A1>& remoteIndices,
+                                       R& remoteIndices,
                                        const T& indexSet)
   {
-    typedef typename RemoteIndices<T,A1>::RemoteIndexMap::iterator RemoteIterator;
-    typedef typename RemoteIndices<T,A1>::RemoteIndexList::iterator RemoteIndexIterator;
+    typedef R RemoteIndices;
+    typedef typename RemoteIndices::RemoteIndexMap::iterator RemoteIterator;
+    typedef typename RemoteIndices::RemoteIndexList::iterator RemoteIndexIterator;
     typedef typename T::GlobalIndex GlobalIndex;
     typedef typename T::LocalIndex::Attribute Attribute;
     typedef std::pair<GlobalIndex,Attribute> GlobalIndexPair;
@@ -658,7 +659,7 @@ namespace Dune
   void IndicesSyncer<T>::calculateMessageSizes()
   {
     typedef typename ParallelIndexSet::const_iterator IndexIterator;
-    typedef CollectiveIterator<T,typename RemoteIndices::Allocator> CollectiveIterator;
+    typedef CollectiveIterator<ParallelIndexSet,typename RemoteIndices::Allocator> CollectiveIterator;
 
     IndexIterator iEnd = indexSet_.end();
     CollectiveIterator collIter = remoteIndices_.template iterator<true>();
