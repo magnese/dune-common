@@ -33,16 +33,18 @@ namespace Dune
    * The idea was to prevent the copying to an additional buffer and the mpi implementation decide whether to allocate buffers or use buffers offered by the
    * interconnection network. Unfortunately the implementation of MPI datatypes seems to be poor.
    */
-  template<typename T>
+  template<class T>
   class DatatypeCommunicator : public InterfaceBuilder
   {
   public:
+    /** @brief Type of the underlying remote indices class. */
+    typedef T RemoteIndices;
+
+    /** @brief The type of the parallel paradigm we use, e.g. MPIParadigm. */
+    typedef typename RemoteIndices::ParallelParadigm ParallelParadigm;
 
     /** @brief Type of the index set. */
-    typedef T ParallelIndexSet;
-
-    /** @brief Type of the underlying remote indices class. */
-    typedef Dune::RemoteIndices<ParallelIndexSet> RemoteIndices;
+    typedef typename RemoteIndices::ParallelIndexSet ParallelIndexSet;
 
     /** @brief The type of the global index. */
     typedef typename RemoteIndices::GlobalIndex GlobalIndex;

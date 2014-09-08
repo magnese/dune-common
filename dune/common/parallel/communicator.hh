@@ -353,7 +353,7 @@ namespace Dune
   template<typename Data>
   inline typename enable_if<is_same<SizeOne, typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type Communicator<Imp>::build()
   {
-    return commimp_.build();
+    return commimp_.template build<Data>();
   }
 
   template<typename Imp>
@@ -400,7 +400,7 @@ namespace Dune
   template<typename GatherScatter, typename Data>
   inline void Communicator<Imp>::backward(Data& source, const Data& dest)
   {
-    commimp_->template sendRecv<GatherScatter,false>(dest, source);
+    commimp_.template sendRecv<GatherScatter,false>(dest, source);
   }
 
 #endif  // DOXYGEN
