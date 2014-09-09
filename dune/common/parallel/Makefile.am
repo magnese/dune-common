@@ -11,12 +11,16 @@ parallelinclude_HEADERS = \
     interface.hh        \
     localindex.hh       \
     mpicollectivecommunication.hh \
+		mpicommunicator.hh	\
     mpiguard.hh         \
     mpihelper.hh        \
+		mpiparallelparadigm.hh \
     mpitraits.hh        \
     plocalindex.hh      \
     remoteindices.hh    \
     selection.hh        \
+		threadcommunicator.hh	\
+		threadparallelparadigm.hh	\
     variablesizecommunicator.hh
 
 include $(top_srcdir)/am/global-rules

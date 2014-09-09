@@ -1,9 +1,11 @@
-set(MPITESTPROGS indicestest indexsettest syncertest selectiontest variablesizecommunicatortest)
+set(MPITESTPROGS indicestest indexsettest mpitest syncertest selectiontest variablesizecommunicatortest)
+
+set(THREADTESTPROGS threadtest)
 
 add_directory_test_target(_test_target)
 # We do not want want to build the tests during make all,
 # but just build them on demand
-add_dependencies(${_test_target} ${MPITESTPROGS})
+add_dependencies(${_test_target} ${MPITESTPROGS} ${THREADTESTPROGS})
 
 add_executable("indexsettest" indexsettest.cc)
 target_link_libraries("indexsettest" "dunecommon" ${CMAKE_THREAD_LIBS_INIT} ${})
@@ -13,6 +15,10 @@ add_executable("indicestest" indicestest.cc)
 target_link_libraries("indicestest" "dunecommon")
 add_dune_mpi_flags(indicestest)
 
+add_executable("mpitest" mpitest.cc)
+target_link_libraries("mpitest" "dunecommon")
+add_dune_mpi_flags(mpitest)
+
 add_executable("selectiontest" selectiontest.cc)
 target_link_libraries("selectiontest" "dunecommon")
 add_dune_mpi_flags(selectiontest)
@@ -21,12 +27,17 @@ add_executable("syncertest" syncertest.cc)
 target_link_libraries("syncertest" "dunecommon")
 add_dune_mpi_flags(syncertest)
 
+add_executable("threadtest" threadtest.cc)
+target_link_libraries("threadtest" "dunecommon" ${CMAKE_THREAD_LIBS_INIT})
+
 add_executable("variablesizecommunicatortest" variablesizecommunicatortest.cc)
 target_link_libraries("variablesizecommunicatortest" "dunecommon")
 add_dune_mpi_flags(variablesizecommunicatortest)
 
 add_test(indexsettest indexsettest)
+add_test(mpitest mpitest)
 add_test(selectiontest selectiontest)
 add_test(indicestest indicestest)
 add_test(syncertest syncertest)
+add_test(threadtest threadtest)
 add_test(variablesizecommunicatortest variablesizecommunicatortest)

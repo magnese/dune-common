@@ -9,12 +9,16 @@ install(FILES
         interface.hh
         localindex.hh
         mpicollectivecommunication.hh
+        mpicommunicator.hh
         mpiguard.hh
         mpihelper.hh
+        mpiparallelparadigm.hh
         mpitraits.hh
         plocalindex.hh
         remoteindices.hh
         selection.hh
+        threadcommunicator.hh
+        threadparallelparadigm.hh
         variablesizecommunicator.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/common/parallel)
 
