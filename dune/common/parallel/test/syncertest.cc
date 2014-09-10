@@ -282,7 +282,7 @@ bool testIndicesSyncer()
   typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
   ParallelParadigmType pp(MPI_COMM_WORLD);
 
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
+  typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndicesType;
   RemoteIndicesType remoteIndices(indexSet, indexSet, pp);
   RemoteIndicesType changedRemoteIndices(changedIndexSet, changedIndexSet, pp);
 

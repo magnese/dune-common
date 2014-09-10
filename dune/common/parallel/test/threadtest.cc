@@ -79,7 +79,7 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   ParallelParadigmType pp(collComm,tid);
 
   // set remote indices
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndicesType;
+  typedef Dune::RemoteIndices<ParallelIndexType,ParallelParadigmType> RemoteIndicesType;
   RemoteIndicesType riS(sis,sis,pp);
   riS.template rebuild<true>();
 

@@ -179,7 +179,7 @@ void testIndices(MPI_Comm comm)
   typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndices;
+  typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
 
   RemoteIndices accuIndices(distIndexSet, globalIndexSet,  pp);
   RemoteIndices overlapIndices(distIndexSet, distIndexSet, pp);
@@ -336,7 +336,7 @@ void testIndicesBuffered(MPI_Comm comm)
   typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndices;
+  typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
 
   RemoteIndices accuIndices(distIndexSet, globalIndexSet, pp);
 
@@ -485,7 +485,7 @@ void testRedistributeIndices(MPI_Comm comm)
   typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndices;
+  typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
 
   RemoteIndices redistributeIndices(sendIndexSet, receiveIndexSet, pp);
   RemoteIndices overlapIndices(receiveIndexSet, receiveIndexSet, pp);
@@ -602,7 +602,7 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
   typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
-  typedef Dune::RemoteIndices<ParallelParadigmType> RemoteIndices;
+  typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
 
   RemoteIndices redistributeIndices(sendIndexSet, receiveIndexSet, pp);
   RemoteIndices overlapIndices(receiveIndexSet, receiveIndexSet, pp);
