@@ -154,10 +154,8 @@ int main(int argc,char** argv){
 
   // create thread communicator
   const size_t numThreads(2);
-  typedef Dune::THREAD_Comm CommType;
-  CommType comm;
-  typedef Dune::ThreadCollectiveCommunication<CommType,numThreads> CollectiveCommunication;
-  CollectiveCommunication collComm(comm);
+  typedef Dune::ThreadCollectiveCommunication<numThreads> CollectiveCommunication;
+  CollectiveCommunication collComm;
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;

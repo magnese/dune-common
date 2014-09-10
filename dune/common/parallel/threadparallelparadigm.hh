@@ -32,16 +32,16 @@ namespace Dune {
   };
 
   /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
-  template<class C, size_t numThreads>
+  template<size_t numThreads>
   class ThreadCollectiveCommunication
   {
     public:
 
       /** @brief The type of the communicator. */
-      typedef C CommType;
+      typedef THREAD_Comm CommType;
 
       /** @brief Default constructor. */
-      inline ThreadCollectiveCommunication(CommType comm);
+      inline ThreadCollectiveCommunication();
 
       /** @brief Destructor. */
       inline ~ThreadCollectiveCommunication()
@@ -192,24 +192,24 @@ namespace Dune {
 
   /** @} */
 
-  template<typename C,size_t numThreads>
-  inline ThreadCollectiveCommunication<C,numThreads>::ThreadCollectiveCommunication(CommType comm) : comm_(comm), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
+  template<size_t numThreads>
+  inline ThreadCollectiveCommunication<numThreads>::ThreadCollectiveCommunication() : comm_(), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
-  template<typename C,size_t numThreads>
-  inline const size_t& ThreadCollectiveCommunication<C,numThreads>::size() const
+  template<size_t numThreads>
+  inline const size_t& ThreadCollectiveCommunication<numThreads>::size() const
   {
     return size_;
   }
 
-  template<typename C,size_t numThreads>
-  inline C ThreadCollectiveCommunication<C,numThreads>::communicator()
+  template<size_t numThreads>
+  inline typename ThreadCollectiveCommunication<numThreads>::CommType ThreadCollectiveCommunication<numThreads>::communicator()
   {
     return comm_;
   }
 
-  template<typename C,size_t numThreads>
-  inline void ThreadCollectiveCommunication<C,numThreads>::barrier()
+  template<size_t numThreads>
+  inline void ThreadCollectiveCommunication<numThreads>::barrier()
   {
     std::unique_lock<std::mutex> lock(mtx_);
     const size_t oldSecCount = seccount_;
@@ -228,50 +228,50 @@ namespace Dune {
     }
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<C,numThreads>::createBuffer_()
+  inline void ThreadCollectiveCommunication<numThreads>::createBuffer_()
   {
     bufferptr_ = new std::array<T,numThreads>();
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<C,numThreads>::createBuffer()
+  inline void ThreadCollectiveCommunication<numThreads>::createBuffer()
   {
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication<C,numThreads>::createBuffer_<T>,this);
+    std::call_once(bufferflag_,&ThreadCollectiveCommunication<numThreads>::createBuffer_<T>,this);
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<C,numThreads>::setBuffer(const T& value, const size_t& tid)
+  inline void ThreadCollectiveCommunication<numThreads>::setBuffer(const T& value, const size_t& tid)
   {
     barrier(); // checkpoint: the buffer is allocated
     (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
     barrier(); // checkpoitn: the buffer is set
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline std::array<T,numThreads>& ThreadCollectiveCommunication<C,numThreads>::getBuffer() const
+  inline std::array<T,numThreads>& ThreadCollectiveCommunication<numThreads>::getBuffer() const
   {
     return *(static_cast<std::array<T,numThreads>*>(bufferptr_));
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<C,numThreads>::deleteBuffer_()
+  inline void ThreadCollectiveCommunication<numThreads>::deleteBuffer_()
   {
     delete static_cast<std::array<T,numThreads>*>(bufferptr_);
     bufferptr_ = nullptr;
   }
 
-  template<typename C,size_t numThreads>
+  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<C,numThreads>::deleteBuffer()
+  inline void ThreadCollectiveCommunication<numThreads>::deleteBuffer()
   {
     barrier(); // checkpoint: the buffer isn't needed anymore
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication<C,numThreads>::deleteBuffer_<T>,this);
+    std::call_once(bufferflag_,&ThreadCollectiveCommunication<numThreads>::deleteBuffer_<T>,this);
     barrier(); // checkpoint: the buffer is free
   }
 
