@@ -45,18 +45,6 @@ namespace Dune {
   {
 
   public:
-    /** @brief Type of the index set we use, e.g. ParallelLocalIndexSet. */
-    typedef T ParallelIndexSet;
-
-    /** @brief The type of the global index. */
-    typedef typename ParallelIndexSet::GlobalIndex GlobalIndex;
-
-    /** @brief The type of the local index. */
-    typedef typename ParallelIndexSet::LocalIndex LocalIndex;
-
-    /** @brief The type of the attribute. */
-    typedef typename LocalIndex::Attribute Attribute;
-
     /** @brief The type of the communicator. */
     typedef MPI_Comm CommType;
 
@@ -83,7 +71,7 @@ namespace Dune {
      * @param includeSelf If true, sending from indices of the processor to other indices on the same processor is enabled even
      * if the same indexset is used on both the sending and receiving side.
      */
-    template<bool ignorePublic, class RemoteIndexList, class RemoteIndexMap = std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > >
+    template<bool ignorePublic,class ParallelIndexSet, class RemoteIndexList, class RemoteIndexMap = std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > >
     inline void buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices,
                             std::set<int>& neighbourIds, bool includeSelf);
 
@@ -98,9 +86,6 @@ namespace Dune {
     /** @brief The communicator tag to use. */
     const static int commTag_=333;
 
-    /** @brief The index pair type. */
-    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
-
     /**
      * @brief Pack the indices to send if source_ and target_ are the same.
      *
@@ -112,8 +97,8 @@ namespace Dune {
      * @param bufferSize The size of the output buffer p_out.
      * @param position The position to start packing.
      */
-    template<bool ignorePublic>
-    inline void packEntries(PairType** myPairs, const ParallelIndexSet& indexSet, char* p_out, MPI_Datatype type, int bufferSize,
+    template<bool ignorePublic,class ParallelIndexSet>
+    inline void packEntries(IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** myPairs, const ParallelIndexSet& indexSet, char* p_out, MPI_Datatype type, int bufferSize,
                             int* position, int n);
 
     /**
@@ -128,19 +113,19 @@ namespace Dune {
      * @param postion The position in the buffer to start unpacking from.
      * @param bufferSize The size of the input buffer.
      */
-    template<class RemoteIndexList>
-    inline void unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
+    template<class ParallelIndexSet,class RemoteIndexList>
+    inline void unpackIndices(RemoteIndexList& remote, int remoteEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** local, int localEntries, char* p_in,
                               MPI_Datatype type, int* positon, int bufferSize, bool fromOurself);
 
     //! \todo Please doc me.
-    template<class RemoteIndexList>
-    inline void unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries, PairType** localSource,
-                              int localSourceEntries, PairType** localDest, int localDestEntries, char* p_in, MPI_Datatype type,
+    template<class ParallelIndexSet,class RemoteIndexList>
+    inline void unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** localSource,
+                              int localSourceEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** localDest, int localDestEntries, char* p_in, MPI_Datatype type,
                               int* position, int bufferSize);
 
     //! \todo Please doc me.
-    template<class RemoteIndexList, class RemoteIndexMap>
-    void unpackCreateRemote(char* p_in, PairType** sourcePairs, PairType** DestPairs, RemoteIndexMap& remoteIndices, int remoteProc,
+    template<class ParallelIndexSet,class RemoteIndexList,class RemoteIndexMap>
+    void unpackCreateRemote(char* p_in, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** sourcePairs, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** DestPairs, RemoteIndexMap& remoteIndices, int remoteProc,
                             int sourcePublish, int destPublish, int bufferSize, bool sendTwo, bool fromOurSelf=false);
   };
 
@@ -186,13 +171,13 @@ namespace Dune {
   }
 
   template<typename T>
-  template<bool ignorePublic>
-  inline void MPIParadigm<T>::packEntries(IndexPair<GlobalIndex,LocalIndex>** pairs, const ParallelIndexSet& indexSet, char* p_out,
+  template<bool ignorePublic,typename ParallelIndexSet>
+  inline void MPIParadigm<T>::packEntries(IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** pairs, const ParallelIndexSet& indexSet, char* p_out,
                                               MPI_Datatype type, int bufferSize, int *position, int n)
   {
     // fill with own indices
     typedef typename ParallelIndexSet::const_iterator const_iterator;
-    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
+    typedef IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex> PairType;
     const const_iterator end = indexSet.end();
 
     // pack the source indices
@@ -209,11 +194,12 @@ namespace Dune {
   }
 
   template<typename T>
-  template<typename RemoteIndexList,typename RemoteIndexMap>
-  inline void MPIParadigm<T>::unpackCreateRemote(char* p_in, PairType** sourcePairs, PairType** destPairs, RemoteIndexMap& remoteIndices,
+  template<typename ParallelIndexSet,typename RemoteIndexList,typename RemoteIndexMap>
+  inline void MPIParadigm<T>::unpackCreateRemote(char* p_in, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** sourcePairs, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** destPairs, RemoteIndexMap& remoteIndices,
                                                  int remoteProc, int sourcePublish, int destPublish, int bufferSize, bool sendTwo,
                                                  bool fromOurSelf)
   {
+    typedef IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex> PairType;
     // unpack the number of indices we received
     int noRemoteSource=-1, noRemoteDest=-1;
     char twoIndexSets=0;
@@ -236,24 +222,24 @@ namespace Dune {
       if(sendTwo) {
         send = new RemoteIndexList();
         // create both remote index sets simultaneously
-        unpackIndices<RemoteIndexList>(*send, *receive, noRemoteSource, sourcePairs, sourcePublish, destPairs, destPublish, p_in, type,
+        unpackIndices<ParallelIndexSet,RemoteIndexList>(*send, *receive, noRemoteSource, sourcePairs, sourcePublish, destPairs, destPublish, p_in, type,
                                        &position, bufferSize);
       }else{
         // we only need one list
-        unpackIndices<RemoteIndexList>(*receive, noRemoteSource, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
+        unpackIndices<ParallelIndexSet,RemoteIndexList>(*receive, noRemoteSource, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
         send=receive;
       }
     }else{
 
       int oldPos=position;
       // two index sets received
-      unpackIndices<RemoteIndexList>(*receive, noRemoteSource, destPairs, destPublish, p_in, type, &position, bufferSize, fromOurSelf);
+      unpackIndices<ParallelIndexSet,RemoteIndexList>(*receive, noRemoteSource, destPairs, destPublish, p_in, type, &position, bufferSize, fromOurSelf);
       if(!sendTwo)
         // unpack source entries again as destination entries
         position=oldPos;
 
       send = new RemoteIndexList();
-      unpackIndices<RemoteIndexList>(*send, noRemoteDest, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
+      unpackIndices<ParallelIndexSet,RemoteIndexList>(*send, noRemoteDest, sourcePairs, sourcePublish, p_in, type, &position, bufferSize, fromOurSelf);
     }
 
     if(receive->empty() && send->empty()) {
@@ -270,8 +256,8 @@ namespace Dune {
   }
 
   template<typename T>
-  template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
-  inline void MPIParadigm<T>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
+  template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList,typename RemoteIndexMap>
+  inline void MPIParadigm<T>::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
                                           bool includeSelf)
   {
     // processor configuration
@@ -290,7 +276,7 @@ namespace Dune {
       // nothing to communicate
       return;
 
-    typedef typename T::const_iterator const_iterator;
+    typedef typename ParallelIndexSet::const_iterator const_iterator;
 
     int noPublicSource=0;
     const const_iterator sourceItEnd=source->end();
@@ -320,7 +306,7 @@ namespace Dune {
     MPI_Allreduce(&publish, &maxPublish, 1, MPI_INT, MPI_MAX, comm_);
 
     // allocate buffers
-    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
+    typedef IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex> PairType;
 
     PairType** destPairs;
     PairType** sourcePairs = new PairType*[sourcePublish>0 ? sourcePublish : 1];
@@ -361,14 +347,14 @@ namespace Dune {
     MPI_Pack(&destPublish, 1, MPI_INT, buffer[0], bufferSize, &position, comm_);
 
     // now pack the source indices and setup the destination pairs
-    packEntries<ignorePublic>(sourcePairs, *source, buffer[0], type, bufferSize, &position, sourcePublish);
+    packEntries<ignorePublic,ParallelIndexSet>(sourcePairs, *source, buffer[0], type, bufferSize, &position, sourcePublish);
     // if necessary send the dest indices and setup the source pairs
     if(sendTwo)
-      packEntries<ignorePublic>(destPairs, *target, buffer[0], type, bufferSize, &position, destPublish);
+      packEntries<ignorePublic,ParallelIndexSet>(destPairs, *target, buffer[0], type, bufferSize, &position, destPublish);
 
     // update remote indices for ourself
     if(sendTwo|| includeSelf)
-      unpackCreateRemote<RemoteIndexList,RemoteIndexMap>(buffer[0], sourcePairs, destPairs, remoteIndices, rank, sourcePublish, destPublish,
+      unpackCreateRemote<ParallelIndexSet,RemoteIndexList,RemoteIndexMap>(buffer[0], sourcePairs, destPairs, remoteIndices, rank, sourcePublish, destPublish,
                                                          bufferSize, sendTwo, includeSelf);
 
     neighbourIds.erase(rank);
@@ -394,7 +380,7 @@ namespace Dune {
         // the process these indices are from
         int remoteProc = (rank+procs-proc)%procs;
 
-        unpackCreateRemote<RemoteIndexList,RemoteIndexMap>(p_in, sourcePairs, destPairs, remoteIndices, remoteProc, sourcePublish,
+        unpackCreateRemote<ParallelIndexSet,RemoteIndexList,RemoteIndexMap>(p_in, sourcePairs, destPairs, remoteIndices, remoteProc, sourcePublish,
                                                            destPublish, bufferSize, sendTwo);
 
       }
@@ -427,7 +413,7 @@ namespace Dune {
         // receive message
         MPI_Recv(buffer[1], size, MPI_PACKED, remoteProc, commTag_, comm_, &status);
 
-        unpackCreateRemote<RemoteIndexList,RemoteIndexMap>(buffer[1], sourcePairs, destPairs, remoteIndices, remoteProc, sourcePublish,
+        unpackCreateRemote<ParallelIndexSet,RemoteIndexList,RemoteIndexMap>(buffer[1], sourcePairs, destPairs, remoteIndices, remoteProc, sourcePublish,
                                                            destPublish, bufferSize, sendTwo);
       }
       // wait for completion of pending requests
@@ -457,12 +443,15 @@ namespace Dune {
   }
 
   template<typename T>
-  template<typename RemoteIndexList>
-  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& remote, int remoteEntries, PairType** local, int localEntries, char* p_in,
+  template<typename ParallelIndexSet,typename RemoteIndexList>
+  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& remote, int remoteEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** local, int localEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize, bool fromOurSelf)
   {
 
     typedef typename RemoteIndexList::MemberType RemoteIndex;
+    typedef typename ParallelIndexSet::GlobalIndex GlobalIndex;
+    typedef typename ParallelIndexSet::LocalIndex LocalIndex;
+    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
 
     if(remoteEntries==0)
       return;
@@ -520,12 +509,13 @@ namespace Dune {
   }
 
   template<typename T>
-  template<typename RemoteIndexList>
-  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries,  PairType** localSource,
-                                                int localSourceEntries, PairType** localDest, int localDestEntries, char* p_in,
+  template<typename ParallelIndexSet,typename RemoteIndexList>
+  inline void MPIParadigm<T>::unpackIndices(RemoteIndexList& send, RemoteIndexList& receive, int remoteEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** localSource,
+                                                int localSourceEntries, IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex>** localDest, int localDestEntries, char* p_in,
                                                 MPI_Datatype type, int* position, int bufferSize)
   {
 
+    typedef IndexPair<typename ParallelIndexSet::GlobalIndex,typename ParallelIndexSet::LocalIndex> PairType;
     typedef typename RemoteIndexList::MemberType RemoteIndex;
     int n_in=0, sourceIndex=0, destIndex=0;
 

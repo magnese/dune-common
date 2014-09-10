@@ -116,18 +116,6 @@ namespace Dune {
   {
 
   public:
-    /** @brief Type of the index set we use, e.g. ParallelLocalIndexSet. */
-    typedef T ParallelIndexSet;
-
-    /** @brief The type of the global index. */
-    typedef typename ParallelIndexSet::GlobalIndex GlobalIndex;
-
-    /** @brief The type of the local index. */
-    typedef typename ParallelIndexSet::LocalIndex LocalIndex;
-
-    /** @brief The type of the attribute. */
-    typedef typename LocalIndex::Attribute Attribute;
-
     /** @brief The type of the collective communication. */
     typedef C CollectiveCommunicationType;
 
@@ -166,7 +154,7 @@ namespace Dune {
      * @param includeSelf If true, sending from indices of the processor to other indices on the same processor is enabled even
      * if the same indexset is used on both the sending and receiving side.
      */
-    template<bool ignorePublic, class RemoteIndexList, class RemoteIndexMap = std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > >
+    template<bool ignorePublic,class ParallelIndexSet, class RemoteIndexList, class RemoteIndexMap = std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > >
     inline void buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices,
                             std::set<int>& neighbourIds, bool includeSelf);
 
@@ -181,13 +169,9 @@ namespace Dune {
     /** @brief The thread ID. */
     size_t tid_;
 
-    /** @brief The index pair type. */
-    typedef IndexPair<GlobalIndex,LocalIndex> PairType;
-
     /** @brief Given a source and a target, it creates the corresponding RemoteIndexList. */
-    template<bool ignorePublic,typename RemoteIndexList>
-    inline RemoteIndexList* createRemoteIndexList(const T* source,const T* target);
-
+    template<bool ignorePublic,class ParallelIndexSet,class RemoteIndexList>
+    inline RemoteIndexList* createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target);
   };
 
   /** @} */
@@ -311,13 +295,13 @@ namespace Dune {
   }
 
   template<typename T,typename C>
-  template<bool ignorePublic,typename RemoteIndexList>
-  inline RemoteIndexList* ThreadParadigm<T,C>::createRemoteIndexList(const T* source,const T* target)
+  template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList>
+  inline RemoteIndexList* ThreadParadigm<T,C>::createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target)
   {
     // index list
     RemoteIndexList* remoteIndexList = new RemoteIndexList();
 
-    typedef typename T::const_iterator const_iterator;
+    typedef typename ParallelIndexSet::const_iterator const_iterator;
     typedef typename RemoteIndexList::MemberType RemoteIndex;
 
     const_iterator itSEnd = source->end();
@@ -343,9 +327,8 @@ namespace Dune {
   }
 
   template<typename T,typename C>
-  template<bool ignorePublic,typename RemoteIndexList,typename RemoteIndexMap>
-  inline void ThreadParadigm<T,C>::buildRemote(const T* source, const T* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds,
-                                               bool includeSelf)
+  template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList,typename RemoteIndexMap>
+  inline void ThreadParadigm<T,C>::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds, bool includeSelf)
   {
     // is the source different form the target?
     bool differentTarget(source != target);
@@ -355,7 +338,7 @@ namespace Dune {
       return;
 
     // create buffer to communicate indices
-    typedef std::pair<const T*,const T*> IndicesPairType;
+    typedef std::pair<const ParallelIndexSet*,const ParallelIndexSet*> IndicesPairType;
     colcomm_.template createBuffer<IndicesPairType>();
     colcomm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
@@ -369,12 +352,12 @@ namespace Dune {
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
-          send = createRemoteIndexList<ignorePublic,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+          send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
 
           if(!(send->empty()))
             neighbourIds.insert(remoteProc);
           if(differentTarget && (!(send->empty())))
-            receive  = createRemoteIndexList<ignorePublic,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
           else
             receive=send;
 
@@ -390,9 +373,9 @@ namespace Dune {
         {
           if(neighbourIds.find(remoteProc)!=neighbourIds.end())
           {
-            send = createRemoteIndexList<ignorePublic,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+            send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
             if(differentTarget)
-              receive  = createRemoteIndexList<ignorePublic,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
             else
               receive=send;
 
