@@ -75,7 +75,7 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create parallel paradigm
-  typedef Dune::ThreadParadigm<ParallelIndexType,C> ParallelParadigmType;
+  typedef Dune::ThreadParadigm<C> ParallelParadigmType;
   ParallelParadigmType pp(collComm,tid);
 
   // set remote indices

@@ -108,10 +108,9 @@ namespace Dune {
 
   /**
    * @brief ThreadParadigm.
-   * @tparam T The type of the underlying index set.
    * @tparam C The collective communication.
    */
-  template<class T, class C>
+  template<class C>
   class ThreadParadigm
   {
 
@@ -259,44 +258,44 @@ namespace Dune {
     barrier(); // checkpoint: the buffer is free
   }
 
-  template<typename T,typename C>
-  inline ThreadParadigm<T,C>::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
+  template<typename C>
+  inline ThreadParadigm<C>::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
   {}
 
-  template<typename T,typename C>
-  inline void ThreadParadigm<T,C>::setParadigm(CollectiveCommunicationType& colComm, const size_t& tid)
+  template<typename C>
+  inline void ThreadParadigm<C>::setParadigm(CollectiveCommunicationType& colComm, const size_t& tid)
   {
     colcomm_ = colComm;
     tid_ = tid;
   }
 
-  template<typename T,typename C>
-  inline size_t ThreadParadigm<T,C>::threadID() const
+  template<typename C>
+  inline size_t ThreadParadigm<C>::threadID() const
   {
     return tid_;
   }
 
-  template<typename T,typename C>
-  inline size_t ThreadParadigm<T,C>::numThreads() const
+  template<typename C>
+  inline size_t ThreadParadigm<C>::numThreads() const
   {
     return colcomm_.size();
   }
 
-  template<typename T,typename C>
-  inline typename ThreadParadigm<T,C>::CollectiveCommunicationType& ThreadParadigm<T,C>::collCommunicator() const
+  template<typename C>
+  inline typename ThreadParadigm<C>::CollectiveCommunicationType& ThreadParadigm<C>::collCommunicator() const
   {
     return colcomm_;
   }
 
-  template<typename T,typename C>
-  inline typename ThreadParadigm<T,C>::CommType ThreadParadigm<T,C>::communicator()
+  template<typename C>
+  inline typename ThreadParadigm<C>::CommType ThreadParadigm<C>::communicator()
   {
     return colcomm_.communicator();
   }
 
-  template<typename T,typename C>
+  template<typename C>
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList>
-  inline RemoteIndexList* ThreadParadigm<T,C>::createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target)
+  inline RemoteIndexList* ThreadParadigm<C>::createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target)
   {
     // index list
     RemoteIndexList* remoteIndexList = new RemoteIndexList();
@@ -326,9 +325,9 @@ namespace Dune {
     return remoteIndexList;
   }
 
-  template<typename T,typename C>
+  template<typename C>
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList,typename RemoteIndexMap>
-  inline void ThreadParadigm<T,C>::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds, bool includeSelf)
+  inline void ThreadParadigm<C>::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds, bool includeSelf)
   {
     // is the source different form the target?
     bool differentTarget(source != target);
