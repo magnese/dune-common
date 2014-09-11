@@ -93,7 +93,7 @@ int main(int argc,char** argv){
     }
 
     // create parallel paradigm
-    typedef Dune::MPIParadigm<ParallelIndexType> ParallelParadigmType;
+    typedef Dune::MPIParadigm ParallelParadigmType;
     ParallelParadigmType pp(MPI_COMM_WORLD);
 
     // set remote indices

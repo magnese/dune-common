@@ -176,7 +176,7 @@ void testIndices(MPI_Comm comm)
     globalArray=new Array(0);
 
   // create parallel paradigm
-  typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
+  typedef Dune::MPIParadigm ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
   typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
@@ -333,7 +333,7 @@ void testIndicesBuffered(MPI_Comm comm)
   }
 
   // create parallel paradigm
-  typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
+  typedef Dune::MPIParadigm ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
   typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
@@ -482,7 +482,7 @@ void testRedistributeIndices(MPI_Comm comm)
   std::cout<< rank<<": distributed and global index set!"<<std::endl<<std::flush;
 
   // create parallel paradigm
-  typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
+  typedef Dune::MPIParadigm ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
   typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
@@ -599,7 +599,7 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
   std::cout<< rank<<": distributed and global index set!"<<std::endl<<std::flush;
 
   // create parallel paradigm
-  typedef Dune::MPIParadigm<ParallelIndexSet> ParallelParadigmType;
+  typedef Dune::MPIParadigm ParallelParadigmType;
   ParallelParadigmType pp(comm);
 
   typedef Dune::RemoteIndices<ParallelIndexSet,ParallelParadigmType> RemoteIndices;
