@@ -533,6 +533,8 @@ namespace Dune {
   /** @} */
 
 }
-
+#else
+/* @brief Empty class needed when MPI is not defined for default template parameter in RemoteIndices. */
+class MPIParadigm{};
 #endif
 #endif
