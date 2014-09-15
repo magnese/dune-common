@@ -534,7 +534,13 @@ namespace Dune {
 
 }
 #else
+#include "collectivecommunication.hh"
 /* @brief Empty class needed when MPI is not defined for default template parameter in RemoteIndices. */
-class MPIParadigm{};
+namespace Dune
+{
+struct MPIParadigm{
+  typedef No_Comm CommType;
+};
+}
 #endif
 #endif

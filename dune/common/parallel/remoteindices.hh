@@ -200,28 +200,25 @@ namespace Dune {
     /**
      * @brief Constructor.
      * @param parallel The parallel paradigm to use.
-     * @param source The indexset which represents the global to
-     * local mapping at the source of the communication
-     * @param destination The indexset to which the communication
-     * which represents the global to
-     * local mapping at the destination of the communication.
+     * @param source The indexset which represents the global to local mapping at the source of the communication.
+     * @param destination The indexset to which the communication which represents the global to local mapping at the destination of the communication.
      * May be the same as the source indexset.
-     * @param neighbours Optional: The neighbours the process shares indices with.
-     * If this parameter is omitted a ring communication with all indices will take
+     * @param neighbours Optional: The neighbours the process shares indices with. If this parameter is omitted a ring communication with all indices will take
      * place to calculate this information which is O(P).
-     * @param includeSelf If true, sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is used
-     * on both the
-     * sending and receiving side.
+     * @param includeSelf If true, sending from indices of the processor to other indices on the same processor is enabled even if the same indexset is used
+     * on both the sending and receiving side.
      */
     inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
+                         const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
+
+    /** @brief Constructor available only for MPI.*/
+    inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const typename MPIParadigm::CommType& comm,
                          const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
 
     RemoteIndices();
 
     /**
-     * @brief Tell whether sending from indices of the processor to other
-     * indices on the same processor is enabled even if the same indexset is
+     * @brief Tell whether sending from indices of the processor to other indices on the same processor is enabled even if the same indexset is
      * used on both the sending and receiving side.
      *
      * @param includeSelf If true it is enabled.
@@ -234,14 +231,10 @@ namespace Dune {
      * @warning All remote indices already setup will be deleted!
      *
      * @param parallel The parallel paradigm to use.
-     * @param source The indexset which represents the global to
-     * local mapping at the source of the communication
-     * @param destination The indexset to which the communication
-     * which represents the global to
-     * local mapping at the destination of the communication.
+     * @param source The indexset which represents the global to local mapping at the source of the communication.
+     * @param destination The indexset to which the communication which represents the global to local mapping at the destination of the communication.
      * May be the same as the source indexset.
-     * @param neighbours Optional: The neighbours the process shares indices with.
-     * If this parameter is omitted a ring communication with all indices will take
+     * @param neighbours Optional: The neighbours the process shares indices with. If this parameter is omitted a ring communication with all indices will take
      * place to calculate this information which is O(P).
      */
     void setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
@@ -355,7 +348,7 @@ namespace Dune {
     const ParallelIndexSet* target_;
 
     /** @brief Parallel paradigm used. */
-    ParallelParadigm& parallel_;
+    ParallelParadigm* parallel_;
 
     /** @brief The neighbours we share indices with. If not empty this will speedup rebuild. */
     std::set<int> neighbourIds;
@@ -748,12 +741,23 @@ namespace Dune {
 
   template<typename T,typename P,typename A>
   inline RemoteIndices<T,P,A>::RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
-                                           const std::vector<int>& neighbours, bool includeSelf_)  : source_(&source),
-                                           target_(&destination), parallel_(parallel), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
-                                           firstBuild(true), includeSelf(includeSelf_)
+                                             const std::vector<int>& neighbours, bool includeSelf_) : source_(&source),
+                                             target_(&destination), parallel_(&parallel), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
+                                             firstBuild(true), includeSelf(includeSelf_)
   {
     setNeighbours(neighbours);
   }
+
+  template<typename T,typename P,typename A>
+  inline RemoteIndices<T,P,A>::RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const typename MPIParadigm::CommType& comm,
+                                             const std::vector<int>& neighbours, bool includeSelf_) : source_(&source),
+                                             target_(&destination), sourceSeqNo_(-1), destSeqNo_(-1), publicIgnored(false),
+                                             firstBuild(true), includeSelf(includeSelf_)
+  {
+    parallel_ = new ParallelParadigm(comm);
+    setNeighbours(neighbours);
+  }
+
 
   template<typename T,typename P,typename A>
   void RemoteIndices<T,P,A>::setIncludeSelf(bool b)
@@ -767,12 +771,12 @@ namespace Dune {
 
   template<typename T,typename P,typename A>
   void RemoteIndices<T,P,A>::setIndexSets(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
-                                        const std::vector<int>& neighbours)
+                                          const std::vector<int>& neighbours)
   {
     free();
     source_ = &source;
     target_ = &destination;
-    parallel_= parallel;
+    parallel_= &parallel;
     firstBuild = true;
     setNeighbours(neighbours);
   }
@@ -846,7 +850,7 @@ namespace Dune {
     if(firstBuild || ignorePublic!=publicIgnored || ! isSynced())
     {
       free();
-      parallel_.template buildRemote<ignorePublic,ParallelIndexSet,RemoteIndexList>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
+      parallel_->template buildRemote<ignorePublic,ParallelIndexSet,RemoteIndexList>(source_,target_,remoteIndices_,neighbourIds,includeSelf);
       sourceSeqNo_ = source_->seqNo();
       destSeqNo_ = target_->seqNo();
       firstBuild=false;
@@ -892,7 +896,7 @@ namespace Dune {
   template<typename T,typename P,typename A>
   inline typename RemoteIndices<T,P,A>::ParallelParadigm& RemoteIndices<T,P,A>::parallelParadigm() const
   {
-    return parallel_;
+    return *parallel_;
   }
 
   template<typename T,typename P,typename A>
@@ -1087,7 +1091,7 @@ namespace Dune {
   template<typename T,typename P,typename A>
   inline typename RemoteIndices<T,P,A>::CommType RemoteIndices<T,P,A>::communicator() const
   {
-    return parallel_.communicator();
+    return parallel_->communicator();
   }
 
   template<typename T, typename A>
