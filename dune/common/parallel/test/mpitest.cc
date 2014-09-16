@@ -114,7 +114,7 @@ int main(int argc,char** argv){
     Dune::EnumItem<flags,ghost> ghostFlags;
     Dune::EnumItem<flags,owner> ownerFlags;
 
-    typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+    typedef Dune::CommunicationInterface<ParallelParadigmType> InterfaceType;
     InterfaceType infS;
     infS.build(riS,ownerFlags,ghostFlags);
 

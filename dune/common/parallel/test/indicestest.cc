@@ -349,7 +349,7 @@ void testIndicesBuffered(MPI_Comm comm)
   RemoteIndices overlapIndices(distIndexSet, distIndexSet, pp);
   overlapIndices.rebuild<false>();
 
-  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+  typedef Dune::CommunicationInterface<ParallelParadigmType> InterfaceType;
   InterfaceType accuInterface;
   InterfaceType overlapInterface;
   Dune::EnumItem<GridFlags,owner> sourceFlags;
@@ -620,7 +620,7 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
 
   std::cout<<redistributeIndices<<std::endl;
 
-  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+  typedef Dune::CommunicationInterface<ParallelParadigmType> InterfaceType;
   InterfaceType redistributeInterface, overlapInterface;
   EnumItem<GridFlags,owner> fowner;
   EnumItem<GridFlags,overlap> foverlap;

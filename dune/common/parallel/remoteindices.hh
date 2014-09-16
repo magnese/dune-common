@@ -146,7 +146,7 @@ namespace Dune {
    * @tparam P The type of the parallel paradigm to use.
    * @tparam A The type of the allocator to use.
    */
-  template<class T, typename P=MPIParadigm, class A=std::allocator<RemoteIndex<typename T::GlobalIndex, typename T::LocalIndex::Attribute> > >
+  template<class T, class P=MPIParadigm, class A=std::allocator<RemoteIndex<typename T::GlobalIndex, typename T::LocalIndex::Attribute> > >
   class RemoteIndices
   {
   public:
@@ -211,7 +211,7 @@ namespace Dune {
     inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, ParallelParadigm& parallel,
                          const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
 
-    /** @brief Constructor available only for MPI. */
+    /** @brief Constructor. Available only for MPI. */
     inline RemoteIndices(const ParallelIndexSet& source, const ParallelIndexSet& destination, const typename MPIParadigm::CommType& comm,
                          const std::vector<int>& neighbours=std::vector<int>(), bool includeSelf=false);
 

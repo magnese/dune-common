@@ -4,6 +4,7 @@
 #ifndef DUNE_INTERFACE_HH
 #define DUNE_INTERFACE_HH
 
+#include "mpiparallelparadigm.hh"
 #include "remoteindices.hh"
 #include <dune/common/enumset.hh>
 
@@ -176,7 +177,7 @@ namespace Dune
    * Describes the communication interface between indices on the local process and those on remote processes.
    */
   template<class P=MPIParadigm>
-  class Interface : public InterfaceBuilder
+  class CommunicationInterface : public InterfaceBuilder
   {
 
   public:
@@ -227,26 +228,26 @@ namespace Dune
     InformationMap& interfaces();
 
     /** @brief Constructor. */
-    Interface(ParallelParadigm& parallel) : communicator_(parallel.communicator()), interfaces_()
+    CommunicationInterface(ParallelParadigm& parallel) : communicator_(parallel.communicator()), interfaces_()
     {}
 
     /** @brief Constructor. */
-    Interface(typename ParallelParadigm::CommType comm) : communicator_(comm), interfaces_()
+    CommunicationInterface(typename ParallelParadigm::CommType comm) : communicator_(comm), interfaces_()
     {}
 
     /** @brief Constructor. */
-    Interface() : communicator_(ParallelParadigm::nullComm), interfaces_()
+    CommunicationInterface() : communicator_(ParallelParadigm::nullComm), interfaces_()
     {}
 
     /** @brief Print the interface to std::out for debugging. */
     void print() const;
 
-    bool operator!=(const Interface& o) const
+    bool operator!=(const CommunicationInterface& o) const
     {
       return ! operator==(o);
     }
 
-    bool operator==(const Interface& o) const
+    bool operator==(const CommunicationInterface& o) const
     {
       if(communicator_!=o.communicator_)
         return false;
@@ -268,13 +269,14 @@ namespace Dune
     }
 
     /** @brief Destructor. */
-    virtual ~Interface();
+    virtual ~CommunicationInterface();
 
     void strip();
-  protected:
 
+  protected:
     /** @brief The communicator we use. */
     CommType communicator_;
+
   private:
     /**
      * @brief Information about the interfaces.
@@ -310,6 +312,9 @@ namespace Dune
       InformationMap& interfaces_;
     };
   };
+
+  /** @brief Typdef for compatibility with the old implementation of Interface. */
+  typedef CommunicationInterface<> Interface;
 
   template<class R, class T1, class T2, class Op, bool send>
   void InterfaceBuilder::buildInterface(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags, Op& interfaceInformation) const
@@ -366,25 +371,25 @@ namespace Dune
   }
 
   template<typename P>
-  inline typename Interface<P>::CommType Interface<P>::communicator() const
+  inline typename CommunicationInterface<P>::CommType CommunicationInterface<P>::communicator() const
   {
     return communicator_;
   }
 
   template<typename P>
-  inline const typename Interface<P>::InformationMap& Interface<P>::interfaces() const
+  inline const typename CommunicationInterface<P>::InformationMap& CommunicationInterface<P>::interfaces() const
   {
     return interfaces_;
   }
 
   template<typename P>
-  inline typename Interface<P>::InformationMap& Interface<P>::interfaces()
+  inline typename CommunicationInterface<P>::InformationMap& CommunicationInterface<P>::interfaces()
   {
     return interfaces_;
   }
 
   template<typename P>
-  inline void Interface<P>::print() const
+  inline void CommunicationInterface<P>::print() const
   {
     typedef InformationMap::const_iterator const_iterator;
     const const_iterator end=interfaces_.end();
@@ -410,7 +415,7 @@ namespace Dune
 
   template<typename P>
   template<typename R, typename T1, typename T2>
-  inline void Interface<P>::build(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags)
+  inline void CommunicationInterface<P>::build(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags)
   {
     communicator_=remoteIndices.communicator();
 
@@ -427,7 +432,7 @@ namespace Dune
   }
 
   template<typename P>
-  inline void Interface<P>::strip()
+  inline void CommunicationInterface<P>::strip()
   {
     typedef InformationMap::iterator const_iterator;
     for(const_iterator interfacePair = interfaces_.begin(); interfacePair != interfaces_.end();)
@@ -443,7 +448,7 @@ namespace Dune
   }
 
   template<typename P>
-  inline void Interface<P>::free()
+  inline void CommunicationInterface<P>::free()
   {
     typedef InformationMap::iterator iterator;
     typedef InformationMap::const_iterator const_iterator;
@@ -457,7 +462,7 @@ namespace Dune
   }
 
   template<typename P>
-  inline Interface<P>::~Interface()
+  inline CommunicationInterface<P>::~CommunicationInterface()
   {
     free();
   }
@@ -467,9 +472,9 @@ namespace Dune
 namespace std
 {
   template<typename P>
-  inline ostream& operator<<(ostream& os, const Dune::Interface<P>& interface)
+  inline ostream& operator<<(ostream& os, const Dune::CommunicationInterface<P>& interface)
   {
-    typedef typename Dune::Interface<P>::InformationMap InfoMap;
+    typedef typename Dune::CommunicationInterface<P>::InformationMap InfoMap;
     typedef typename InfoMap::const_iterator Iter;
     Iter end = interface.interfaces().end();
     for(Iter i=interface.interfaces().begin(); i!=end; ++i)
