@@ -119,19 +119,11 @@ namespace Dune {
     /** @brief Constructor. */
     inline ThreadParadigm(CollectiveCommunicationType& collComm, const size_t& tid);
 
+    /** @brief Copy is forbidden. */
+    ThreadParadigm(const ThreadParadigm&) = delete;
+
     /** @brief Null communicator. */
     constexpr static CommType nullComm = CommType();
-
-    /** @brief Default constructor. */
-    ThreadParadigm()
-    {}
-
-     /** @brief Set the paradigm we work with. */
-    inline void setParadigm(CollectiveCommunicationType& collComm, const size_t& tid);
-
-    /** @brief Destructor. */
-    ~ThreadParadigm()
-    {}
 
     /** @brief Get the thread ID. */
     inline size_t threadID() const;
@@ -155,11 +147,11 @@ namespace Dune {
     inline void buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices,
                             std::set<int>& neighbourIds, bool includeSelf);
 
-  private:
-    /** copying is forbidden. */
-    ThreadParadigm(const ThreadParadigm&)
+    /** @brief Destructor. */
+    ~ThreadParadigm()
     {}
 
+  private:
     /** @brief The collective communication. */
     CollectiveCommunicationType& colcomm_;
 
@@ -249,12 +241,6 @@ namespace Dune {
 
   inline ThreadParadigm::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
   {}
-
-  inline void ThreadParadigm::setParadigm(CollectiveCommunicationType& colComm, const size_t& tid)
-  {
-    colcomm_ = colComm;
-    tid_ = tid;
-  }
 
   inline size_t ThreadParadigm::threadID() const
   {

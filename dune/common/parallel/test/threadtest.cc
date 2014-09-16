@@ -135,8 +135,9 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create communicator
-  typedef Dune::Communicator<Dune::ThreadCommunicator<InterfaceType>> DuneCommunicator;
-  DuneCommunicator duneComm(infS);
+  typedef Dune::Communicator<Dune::ThreadCommunicator> DuneCommunicator;
+  DuneCommunicator duneComm;
+  duneComm.template build<VectorType>(infS);
 
   // communicate
   if(tid==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;
@@ -153,8 +154,9 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
 int main(int argc,char** argv){
 
   // create thread communicator
+  const size_t numThreads(2);
   typedef Dune::ThreadCollectiveCommunication CollectiveCommunication;
-  CollectiveCommunication collComm(2);
+  CollectiveCommunication collComm(numThreads);
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;
