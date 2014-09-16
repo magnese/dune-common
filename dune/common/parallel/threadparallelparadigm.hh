@@ -124,6 +124,9 @@ namespace Dune {
     /** @brief Constructor. */
     inline ThreadParadigm(CollectiveCommunicationType& collComm, const size_t& tid);
 
+    /** @brief Null communicator. */
+    constexpr static CommType nullComm = CommType();
+
     /** @brief Default constructor. */
     ThreadParadigm()
     {}

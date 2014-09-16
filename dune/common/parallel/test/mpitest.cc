@@ -114,9 +114,9 @@ int main(int argc,char** argv){
     Dune::EnumItem<flags,ghost> ghostFlags;
     Dune::EnumItem<flags,owner> ownerFlags;
 
-    typedef Dune::Interface<RemoteIndicesType> InterfaceType;
-    InterfaceType infS(riS);
-    infS.build(ownerFlags,ghostFlags);
+    typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+    InterfaceType infS;
+    infS.build(riS,ownerFlags,ghostFlags);
 
     // output infS
     for(size_t i=0;i!=size;++i){

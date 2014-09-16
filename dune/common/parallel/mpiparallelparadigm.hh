@@ -47,6 +47,9 @@ namespace Dune {
     /** @brief Constructor. */
     inline MPIParadigm(const CommType& comm);
 
+    /** @brief Null communicator. */
+    constexpr static CommType nullComm = CommType(MPI_COMM_NULL);
+
     /** @brief Default constructor. */
     MPIParadigm()
     {}
@@ -535,11 +538,12 @@ namespace Dune {
 }
 #else
 #include "collectivecommunication.hh"
-/* @brief Empty class needed when MPI is not defined for default template parameter in RemoteIndices. */
+/** @brief Class needed when MPI is not defined. */
 namespace Dune
 {
 struct MPIParadigm{
   typedef No_Comm CommType;
+  constexpr static CommType nullComm = CommType();
 };
 }
 #endif

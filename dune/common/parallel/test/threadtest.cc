@@ -93,9 +93,9 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   Dune::EnumItem<flags,ghost> ghostFlags;
   Dune::EnumItem<flags,owner> ownerFlags;
 
-  typedef Dune::Interface<RemoteIndicesType> InterfaceType;
-  InterfaceType infS(riS);
-  infS.build(ownerFlags,ghostFlags);
+  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+  InterfaceType infS;
+  infS.build(riS,ownerFlags,ghostFlags);
 
   // output infS
   osmutex.lock();

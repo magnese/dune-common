@@ -349,15 +349,15 @@ void testIndicesBuffered(MPI_Comm comm)
   RemoteIndices overlapIndices(distIndexSet, distIndexSet, pp);
   overlapIndices.rebuild<false>();
 
-  typedef Dune::Interface<RemoteIndices> InterfaceType;
-  InterfaceType accuInterface(accuIndices);
-  InterfaceType overlapInterface(overlapIndices);
+  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+  InterfaceType accuInterface;
+  InterfaceType overlapInterface;
   Dune::EnumItem<GridFlags,owner> sourceFlags;
   Dune::Combine<Dune::EnumItem<GridFlags,overlap>,Dune::EnumItem<GridFlags,owner>,GridFlags> destFlags;
   //    Dune::Bool2Type<true> flag;
 
-  accuInterface.build(sourceFlags, destFlags);
-  overlapInterface.build(Dune::EnumItem<GridFlags,owner>(), Dune::EnumItem<GridFlags,overlap>());
+  accuInterface.build(accuIndices, sourceFlags, destFlags);
+  overlapInterface.build(overlapIndices, Dune::EnumItem<GridFlags,owner>(), Dune::EnumItem<GridFlags,overlap>());
   overlapInterface.print();
   accuInterface.print();
 
@@ -620,13 +620,13 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
 
   std::cout<<redistributeIndices<<std::endl;
 
-  typedef Dune::Interface<RemoteIndices> InterfaceType;
-  InterfaceType redistributeInterface(redistributeIndices), overlapInterface(overlapIndices);
+  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
+  InterfaceType redistributeInterface, overlapInterface;
   EnumItem<GridFlags,owner> fowner;
   EnumItem<GridFlags,overlap> foverlap;
 
-  redistributeInterface.build(fowner, fowner);
-  overlapInterface.build(fowner, foverlap);
+  redistributeInterface.build(redistributeIndices, fowner, fowner);
+  overlapInterface.build(overlapIndices, fowner, foverlap);
 
   typedef Dune::Communicator<Dune::MPICommunicator<InterfaceType> > DuneCommunicator;
   DuneCommunicator redistribute(redistributeInterface);
