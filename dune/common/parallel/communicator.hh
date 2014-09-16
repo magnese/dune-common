@@ -4,6 +4,7 @@
 #ifndef DUNE_COMMUNICATOR
 #define DUNE_COMMUNICATOR
 
+#include "mpicommunicator.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/common/stdstreams.hh>
@@ -27,7 +28,7 @@ namespace Dune
    * container \f$x\f$, which would be used in a sequential program. In this
    * module we present classes describing the mapping of the local pieces
    * to the global
-   * view and the communication interfaces.
+   Communicator1* view and the communication interfaces.
    *
    * @section IndexSet Parallel Index Sets
    *
@@ -160,7 +161,7 @@ namespace Dune
   };
 
   /** @brief Communicator interface. It provieds the methods to send and receive data. */
-  template<class Imp>
+  template<class Imp/*=MPICommunicator*/>
   class Communicator
   {
 
@@ -168,26 +169,23 @@ namespace Dune
     /** @brief The type of the parallel communicator implementation. */
     typedef Imp CommunicatorImplementation;
 
-    /** @brief The type of the interface. */
-    typedef typename CommunicatorImplementation::InterfaceType InterfaceType;
-
     /**
      * @brief Constructor.
      * @param interface The interface that defines what indices are to be communicated.
      */
-    Communicator(InterfaceType& interface);
+    Communicator();
 
     /** @brief Build the necessary information for the communication process. */
-    template<class Data>
-    inline typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type build();
+    template<class Data, class I>
+    inline typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type build(const I& interface);
 
     /**
      * @brief Build the necessary information for the communication process.
      * @param source The source in a forward send.
      * @param target The target in a forward send.
      */
-    template<class Data>
-    inline void build(const Data& source, const Data& target);
+    template<class Data, class I>
+    inline void build(const Data& source, const Data& target, const I& interface);
 
     /**
      * @brief Send from source to target.
@@ -301,10 +299,10 @@ namespace Dune
   private:
     /** @brief The communicator implementation. */
     CommunicatorImplementation commimp_;
-
-    /** @brief The interface we are currently work with. */
-    InterfaceType& interface_;
   };
+
+  /** @brief Typedef for compatibility with the old implementation of BufferedCommunicator. */
+  //typedef Communicator<> BufferedCommunicator;
 #ifndef DOXYGEN
 
   template<typename V>
@@ -346,21 +344,22 @@ namespace Dune
   }
 
   template<typename Imp>
-  inline Communicator<Imp>::Communicator(InterfaceType& interface) : commimp_(interface), interface_(interface)
+  inline Communicator<Imp>::Communicator() : commimp_()
   {}
 
   template<typename Imp>
-  template<typename Data>
-  inline typename enable_if<is_same<SizeOne, typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type Communicator<Imp>::build()
+  template<typename Data,typename I>
+  inline typename enable_if<is_same<SizeOne, typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type
+    Communicator<Imp>::build(const I& interface)
   {
-    return commimp_.template build<Data>();
+    return commimp_.template build<Data,I>(interface);
   }
 
   template<typename Imp>
-  template<typename Data>
-  inline void Communicator<Imp>::build(const Data& source, const Data& target)
+  template<typename Data,typename I>
+  inline void Communicator<Imp>::build(const Data& source, const Data& target, const I& interface)
   {
-    commimp_.build(source,target);
+    commimp_.build(source,target,interface);
   }
 
   template<typename Imp>

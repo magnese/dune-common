@@ -313,7 +313,7 @@ namespace Dune
     };
   };
 
-  /** @brief Typdef for compatibility with the old implementation of Interface. */
+  /** @brief Typedef for compatibility with the old implementation of Interface. */
   typedef CommunicationInterface<> Interface;
 
   template<class R, class T1, class T2, class Op, bool send>

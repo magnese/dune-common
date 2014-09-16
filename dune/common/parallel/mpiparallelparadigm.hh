@@ -541,7 +541,8 @@ namespace Dune {
 /** @brief Class needed when MPI is not defined. */
 namespace Dune
 {
-struct MPIParadigm{
+struct MPIParadigm
+{
   typedef No_Comm CommType;
   constexpr static CommType nullComm = CommType();
 };

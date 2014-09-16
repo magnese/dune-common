@@ -363,12 +363,12 @@ void testIndicesBuffered(MPI_Comm comm)
 
   //accuInterface.print();
 
-  typedef Dune::Communicator<Dune::MPICommunicator<InterfaceType> > DuneCommunicator;
-  DuneCommunicator accumulator(accuInterface), overlapExchanger(overlapInterface);
+  typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+  DuneCommunicator accumulator, overlapExchanger;
 
-  accumulator.build<Array>();
+  accumulator.build<Array,InterfaceType>(accuInterface);
 
-  overlapExchanger.build<Array>();
+  overlapExchanger.build<Array,InterfaceType>(overlapInterface);
 
   std::cout<< rank<<": before forward distArray="<< distArray<<std::endl;
 
@@ -628,12 +628,11 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
   redistributeInterface.build(redistributeIndices, fowner, fowner);
   overlapInterface.build(overlapIndices, fowner, foverlap);
 
-  typedef Dune::Communicator<Dune::MPICommunicator<InterfaceType> > DuneCommunicator;
-  DuneCommunicator redistribute(redistributeInterface);
-  DuneCommunicator overlapComm(overlapInterface);
+  typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+  DuneCommunicator redistribute, overlapComm;
 
-  redistribute.build(array, redistributedArray);
-  overlapComm.build<Array>();
+  redistribute.build(array, redistributedArray, redistributeInterface);
+  overlapComm.build<Array,InterfaceType>(overlapInterface);
 
   std::cout<<rank<<": initial array: "<<array<<std::endl;
 

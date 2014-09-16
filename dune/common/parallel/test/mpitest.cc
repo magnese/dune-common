@@ -165,9 +165,9 @@ int main(int argc,char** argv){
     }
 
     // create communicator
-    typedef Dune::Communicator<Dune::MPICommunicator<InterfaceType>> DuneCommunicator;
-    DuneCommunicator duneComm(infS);
-    duneComm.build(al,al);
+    typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+    DuneCommunicator duneComm;
+    duneComm.build(al,al,infS);
 
     // communicate
     if(rank==0) std::cout<<std::endl<<"Forward communication"<<std::endl<<std::endl;

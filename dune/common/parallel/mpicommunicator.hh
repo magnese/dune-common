@@ -209,31 +209,26 @@ namespace Dune
    * Before the data is sent it it copied to a consecutive buffer and then that buffer is sent.
    * The data is received in another buffer and then copied to the actual position.
    */
-  template<class I>
   class MPICommunicator
   {
-
   public:
-    /** @brief The type of the interface. */
-    typedef I InterfaceType;
-
     /**
      * @brief Constructor.
      * @param interface The interface that defines what indices are to be communicated.
      */
-    MPICommunicator(InterfaceType& interface);
+    MPICommunicator();
 
     /** @brief Build the buffers and information for the communication process. */
-    template<class Data>
-    typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type build();
+    template<class Data, class I>
+    typename enable_if<is_same<SizeOne,typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type build(const I& interface);
 
     /**
      * @brief Build the buffers and information for the communication process.
      * @param source The source in a forward send. The values will be copied from here to the send buffers.
      * @param target The target in a forward send. The received values will be copied to here.
      */
-    template<class Data>
-    void build(const Data& source, const Data& target);
+    template<class Data, class I>
+    void build(const Data& source, const Data& target, const I& interface);
 
     /** @brief Free the allocated memory (i.e. buffers and message information. */
     void free();
@@ -247,12 +242,8 @@ namespace Dune
     {}
 
   private:
-
-    /** @brief The type of the map that maps interface information to processors. */
-    typedef typename InterfaceType::InformationMap InterfaceMap;
-
-    /** @brief The type of the communicator. */
-    typedef typename InterfaceType::CommType CommType;
+    /** @brief The type of the map that maps interface information to processors.*/
+    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
     /** @brief Functors for message size caculation. */
     template<class Data, typename IndexedTypeFlag>
@@ -428,9 +419,6 @@ namespace Dune
       size_t size_;
     };
 
-    /** @brief The interface we currently work with. */
-    InterfaceType& interface_;
-
     /**
      * @brief Type of the map of information about the messages to send.
      * The key is the process number to communicate with and the value is the pair of information about sending and receiving messages.
@@ -452,11 +440,11 @@ namespace Dune
       commTag_
     };
 
-    /** @brief The interface map. */
-    InterfaceMap& interfaces_;
+    /** @brief The interface we currently work with. */
+    InterfaceMap interfaces_;
 
     /** @brief The communicator. */
-    CommType communicator_;
+    MPI_Comm communicator_;
   };
 
 #ifndef DOXYGEN
@@ -655,8 +643,7 @@ namespace Dune
       DUNE_THROW(CommunicationError, "A communication error occurred!");
   }
 
-  template<typename I>
-  inline MPICommunicator<I>::MPICommunicator(InterfaceType& interface) : interface_(interface), interfaces_(interface_.interfaces()), communicator_(interface_.communicator())
+  inline MPICommunicator::MPICommunicator()
   {
     buffers_[0]=0;
     buffers_[1]=0;
@@ -664,10 +651,12 @@ namespace Dune
     bufferSize_[1]=0;
   }
 
-  template<typename I>
-  template<typename Data>
-  typename enable_if<is_same<SizeOne, typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type MPICommunicator<I>::build()
+  template<typename Data,typename I>
+  typename enable_if<is_same<SizeOne, typename CommPolicy<Data>::IndexedTypeFlag>::value, void>::type
+    MPICommunicator::build(const I& interface)
   {
+    communicator_ = interface.communicator();
+    interfaces_ = interface.interfaces();
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     typedef typename CommPolicy<Data>::IndexedType IndexedType;
     const size_t indexedTypeSize = sizeof(IndexedType);
@@ -675,7 +664,7 @@ namespace Dune
     bufferSize_[0]=0;
     bufferSize_[1]=0;
 
-    typedef typename InterfaceMap::const_iterator const_iterator;
+    typedef typename I::InformationMap::const_iterator const_iterator;
     const const_iterator end = interfaces_.end();
     for(const_iterator interfacePair = interfaces_.begin(); interfacePair != end; ++interfacePair)
     {
@@ -697,10 +686,11 @@ namespace Dune
     buffers_[1] = new char[bufferSize_[1]];
   }
 
-  template<typename I>
-  template<typename Data>
-  void MPICommunicator<I>::build(const Data& source, const Data& target)
+  template<typename Data,typename I>
+  void MPICommunicator::build(const Data& source, const Data& target, const I& interface)
   {
+    communicator_ = interface.communicator();
+    interfaces_ =interface.interfaces();
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     typedef typename CommPolicy<Data>::IndexedType IndexedType;
     const size_t indexedTypeSize = sizeof(IndexedType);
@@ -708,7 +698,7 @@ namespace Dune
     bufferSize_[0]=0;
     bufferSize_[1]=0;
 
-    typedef typename InterfaceMap::const_iterator const_iterator;
+    typedef typename I::InformationMap::const_iterator const_iterator;
     const const_iterator end = interfaces_.end();
     for(const_iterator interfacePair = interfaces_.begin(); interfacePair != end; ++interfacePair)
     {
@@ -730,8 +720,7 @@ namespace Dune
     buffers_[1] = new char[bufferSize_[1]];
   }
 
-  template<typename I>
-  inline void MPICommunicator<I>::free()
+  inline void MPICommunicator::free()
   {
     messageInformation_.clear();
     if(buffers_[0])
@@ -742,23 +731,20 @@ namespace Dune
     buffers_[0]=buffers_[1]=0;
   }
 
-  template<typename I>
   template<typename Data>
-  inline int MPICommunicator<I>::MessageSizeCalculator<Data,SizeOne>::operator()(const InterfaceInformation& info) const
+  inline int MPICommunicator::MessageSizeCalculator<Data,SizeOne>::operator()(const InterfaceInformation& info) const
   {
     return info.size();
   }
 
-  template<typename I>
   template<typename Data>
-  inline int MPICommunicator<I>::MessageSizeCalculator<Data,SizeOne>::operator()(const Data&, const InterfaceInformation& info) const
+  inline int MPICommunicator::MessageSizeCalculator<Data,SizeOne>::operator()(const Data&, const InterfaceInformation& info) const
   {
     return operator()(info);
   }
 
-  template<typename I>
   template<typename Data>
-  inline int MPICommunicator<I>::MessageSizeCalculator<Data, VariableSize>::operator()(const Data& data, const InterfaceInformation& info) const
+  inline int MPICommunicator::MessageSizeCalculator<Data, VariableSize>::operator()(const Data& data, const InterfaceInformation& info) const
   {
     int entries=0;
     for(size_t i=0; i < info.size(); i++)
@@ -766,9 +752,8 @@ namespace Dune
     return entries;
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter, bool FORWARD>
-  inline void MPICommunicator<I>::MessageGatherer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces,const Data& data, Type* buffer, size_t bufferSize) const
+  inline void MPICommunicator::MessageGatherer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces,const Data& data, Type* buffer, size_t bufferSize) const
   {
 #ifdef DUNE_ISTL_WITH_CHECKING
     typedef typename CommPolicy<Data>::IndexedType IndexedType;
@@ -797,9 +782,8 @@ namespace Dune
 
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter, bool FORWARD>
-  inline void MPICommunicator<I>::MessageGatherer<Data,GatherScatter,FORWARD,SizeOne>::operator()(const InterfaceMap& interfaces, const Data& data, Type* buffer, size_t bufferSize) const
+  inline void MPICommunicator::MessageGatherer<Data,GatherScatter,FORWARD,SizeOne>::operator()(const InterfaceMap& interfaces, const Data& data, Type* buffer, size_t bufferSize) const
   {
 #ifdef DUNE_ISTL_WITH_CHECKING
     typedef typename CommPolicy<Data>::IndexedType IndexedType;
@@ -824,9 +808,8 @@ namespace Dune
 
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter, bool FORWARD>
-  inline void MPICommunicator<I>::MessageScatterer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces, Data& data, Type* buffer, const int& proc) const
+  inline void MPICommunicator::MessageScatterer<Data,GatherScatter,FORWARD,VariableSize>::operator()(const InterfaceMap& interfaces, Data& data, Type* buffer, const int& proc) const
   {
     typedef typename InterfaceMap::value_type::second_type::first_type Information;
     const typename InterfaceMap::const_iterator infoPair = interfaces.find(proc);
@@ -842,9 +825,8 @@ namespace Dune
 
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter, bool FORWARD>
-  inline void MPICommunicator<I>::MessageScatterer<Data,GatherScatter,FORWARD,SizeOne>::operator()(const InterfaceMap& interfaces, Data& data, Type* buffer, const int& proc) const
+  inline void MPICommunicator::MessageScatterer<Data,GatherScatter,FORWARD,SizeOne>::operator()(const InterfaceMap& interfaces, Data& data, Type* buffer, const int& proc) const
   {
     typedef typename InterfaceMap::value_type::second_type::first_type Information;
     const typename InterfaceMap::const_iterator infoPair = interfaces.find(proc);
@@ -856,9 +838,8 @@ namespace Dune
       GatherScatter::scatter(data, buffer[i], info[i]);
   }
 
-  template<typename I>
   template<typename GatherScatter, bool FORWARD, typename Data>
-  void MPICommunicator<I>::sendRecv(const Data& source, Data& dest)
+  void MPICommunicator::sendRecv(const Data& source, Data& dest)
   {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -981,6 +962,12 @@ namespace Dune
   /** @} */
 }
 
-#endif
+//#else
+/** @brief Class needed when MPI is not defined. */
+//namespace Dune
+//{
+//struct MPICommunicator{};
+//}
 
+#endif
 #endif
