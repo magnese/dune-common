@@ -212,10 +212,7 @@ namespace Dune
   class MPICommunicator
   {
   public:
-    /**
-     * @brief Constructor.
-     * @param interface The interface that defines what indices are to be communicated.
-     */
+    /** @brief Constructor. */
     MPICommunicator();
 
     /** @brief Build the buffers and information for the communication process. */
@@ -230,7 +227,7 @@ namespace Dune
     template<class Data, class I>
     void build(const Data& source, const Data& target, const I& interface);
 
-    /** @brief Free the allocated memory (i.e. buffers and message information. */
+    /** @brief Free the allocated memory (i.e. buffers and message information). */
     void free();
 
     /** @brief Send and receive Data. */

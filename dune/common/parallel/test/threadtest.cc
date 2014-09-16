@@ -75,7 +75,7 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create parallel paradigm
-  typedef Dune::ThreadParadigm<C> ParallelParadigmType;
+  typedef Dune::ThreadParadigm ParallelParadigmType;
   ParallelParadigmType pp(collComm,tid);
 
   // set remote indices
@@ -153,9 +153,8 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
 int main(int argc,char** argv){
 
   // create thread communicator
-  const size_t numThreads(2);
-  typedef Dune::ThreadCollectiveCommunication<numThreads> CollectiveCommunication;
-  CollectiveCommunication collComm;
+  typedef Dune::ThreadCollectiveCommunication CollectiveCommunication;
+  CollectiveCommunication collComm(2);
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;

@@ -5,11 +5,12 @@
 #ifndef DUNE_THREADCOMMUNICATOR
 #define DUNE_THREADCOMMUNICATOR
 
+#include "interface.hh"
+#include "communicator.hh"
 #include <vector>
 #include <set>
 #include <algorithm>
 #include <utility>
-#include "communicator.hh"
 
 namespace Dune
 {
@@ -23,32 +24,25 @@ namespace Dune
    * @author Marco Agnese, Markus Blatt
    */
 
-  /** @brief Thread communicator whihc uses a coloring algorithm to send and receive data. */
-  template<class I>
+  /** @brief Thread communicator which uses a coloring algorithm to send and receive data. */
   class ThreadCommunicator
   {
   public:
-    /** @brief The type of the interface. */
-    typedef I InterfaceType;
+    /** @brief Constructor. */
+    ThreadCommunicator()
+    {}
+
+    /** @brief Build the buffers and the information for the communication process. */
+    template<class Data, class I>
+    void build(const I& interface);
 
     /**
-     * @brief Constructor.
-     * @param interface The interface that defines what indices are to be communicated.
-     */
-    ThreadCommunicator(InterfaceType& interface);
-
-    /** @brief Destructor. */
-    ~ThreadCommunicator()
-    {}
-
-    /** @brief Empty method needed to satisfy the communicator interface. */
-    void build()
-    {}
-
-    /** @brief Empty method needed to satisfy the communicator interface. */
-    template<class Data>
-    void build(const Data& source, const Data& target)
-    {}
+      * @brief Build the buffers and information for the communication process.
+      * @param source The source in a forward send. The values will be copied from here to the send buffers.
+      * @param target The target in a forward send. The received values will be copied to here.
+      */
+    template<class Data, class I>
+    void build(const Data& source, const Data& target, const I& interface);
 
     /** @brief Empty method needed to satisfy the communicator interface. */
     void free()
@@ -58,24 +52,16 @@ namespace Dune
     template<class GatherScatter, bool FORWARD, class Data>
     void sendRecv(const Data& source, Data& target);
 
+    /** @brief Destructor. */
+    ~ThreadCommunicator()
+    {}
+
   private:
-    /** @brief The type of remote indices. */
-    typedef typename InterfaceType::RemoteIndicesType RemoteIndicesType;
-
-    /** @brief The type of the parallel paradigm we use. */
-    typedef typename RemoteIndicesType::ParallelParadigm ParallelParadigm;
-
-    /** @brief The type of the collective communication. */
-    typedef typename ParallelParadigm::CollectiveCommunicationType CollectiveCommunicationType;
-
     /** @brief The type of the map that maps interface information to processors. */
-    typedef typename InterfaceType::InformationMap InterfaceMap;
+    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
     /** @brief The interface we currently work with. */
-    InterfaceType& interface_;
-
-    /** @brief The interface map. */
-    InterfaceMap& interfaces_;
+    InterfaceMap interfaces_;
 
     /** @brief The colors of the threads. colors_[i] = color of thread i. */
     std::vector<int> colors_;
@@ -105,21 +91,32 @@ namespace Dune
       inline void operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target);
     };
 
-
   };
 
   /** @} */
 
-  template<typename I>
-  inline ThreadCommunicator<I>::ThreadCommunicator(InterfaceType& interface) : interface_(interface), interfaces_(interface_.interfaces())
+  template<typename Data, typename I>
+  void ThreadCommunicator::build(const I& interface)
   {
-    computeColoring();
+    interfaces_ = interface.interfaces();
+    computeColoring(interface);
+  }
+
+  template<typename Data, typename I>
+  void ThreadCommunicator::build(const Data& source, const Data& target, const I& interface)
+  {
+    interfaces_ = interface.interfaces();
+    computeColoring(interface);
   }
 
   template<typename I>
-  void ThreadCommunicator<I>::computeColoring()
+  void ThreadCommunicator::computeColoring(const I& interface)
   {
-    RemoteIndicesType& remoteIndices = interface_.remoteIndices();
+    typedef typename I::RemoteIndicesType RemoteIndicesType;
+    typedef typename RemoteIndicesType::ParallelParadigm ParallelParadigm;
+    typedef typename ParallelParadigm::CollectiveCommunicationType CollectiveCommunicationType;
+
+    RemoteIndicesType& remoteIndices = interface.remoteIndices();
     ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
     CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
 
@@ -171,24 +168,21 @@ namespace Dune
     numcolors_ = *(std::max_element(colors_.begin(),colors_.end()))+1;
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter>
-  inline void ThreadCommunicator<I>::Updater<Data,GatherScatter,SizeOne>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  inline void ThreadCommunicator::Updater<Data,GatherScatter,SizeOne>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
   {
     GatherScatter::scatter(target,GatherScatter::gather(source,idxSource),idxTarget);
   }
 
-  template<typename I>
   template<typename Data, typename GatherScatter>
-  inline void ThreadCommunicator<I>::Updater<Data,GatherScatter,VariableSize>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  inline void ThreadCommunicator::Updater<Data,GatherScatter,VariableSize>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
   {
     for(size_t j = 0; j != CommPolicy<Data>::getSize(source,idxSource); ++j)
       GatherScatter::scatter(target,GatherScatter::gather(source,idxSource,j),idxTarget,j);
   }
 
-  template<typename I>
   template<typename GatherScatter, bool FORWARD, typename Data>
-  void ThreadCommunicator<I>::sendRecv(const Data& source, Data& target)
+  void ThreadCommunicator::sendRecv(const Data& source, Data& target)
   {
     RemoteIndicesType& remoteIndices = interface_.remoteIndices();
     ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();

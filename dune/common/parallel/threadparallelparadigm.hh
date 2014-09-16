@@ -8,6 +8,7 @@
 #include "plocalindex.hh"
 #include <dune/common/stdstreams.hh>
 #include <utility>
+#include <vector>
 #include <map>
 #include <set>
 #include <iostream>
@@ -32,16 +33,14 @@ namespace Dune {
   };
 
   /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
-  template<size_t numThreads>
   class ThreadCollectiveCommunication
   {
     public:
-
       /** @brief The type of the communicator. */
       typedef THREAD_Comm CommType;
 
       /** @brief Default constructor. */
-      inline ThreadCollectiveCommunication();
+      ThreadCollectiveCommunication(const size_t& numThreads);
 
       /** @brief Destructor. */
       inline ~ThreadCollectiveCommunication()
@@ -66,7 +65,7 @@ namespace Dune {
 
       /** @brief Get buffer. */
       template<class T>
-      inline std::array<T,numThreads>& getBuffer() const;
+      inline std::vector<T>& getBuffer() const;
 
       /** @brief Delete buffer. */
       template<class T>
@@ -77,7 +76,7 @@ namespace Dune {
       CommType comm_;
 
       /** @brief Number of threads. */
-      const size_t size_;
+      size_t size_;
 
       /** @brief Flag used by std::call_once function. */
       std::once_flag bufferflag_;
@@ -106,17 +105,13 @@ namespace Dune {
       inline void deleteBuffer_();
   };
 
-  /**
-   * @brief ThreadParadigm.
-   * @tparam C The collective communication.
-   */
-  template<class C>
+  /** @brief ThreadParadigm. */
   class ThreadParadigm
   {
 
   public:
     /** @brief The type of the collective communication. */
-    typedef C CollectiveCommunicationType;
+    typedef ThreadCollectiveCommunication CollectiveCommunicationType;
 
     /** @brief The type of the communicator. */
     typedef typename CollectiveCommunicationType::CommType CommType;
@@ -178,24 +173,21 @@ namespace Dune {
 
   /** @} */
 
-  template<size_t numThreads>
-  inline ThreadCollectiveCommunication<numThreads>::ThreadCollectiveCommunication() : comm_(), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
+  ThreadCollectiveCommunication::ThreadCollectiveCommunication(const size_t& numThreads) :
+    comm_(), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
-  template<size_t numThreads>
-  inline const size_t& ThreadCollectiveCommunication<numThreads>::size() const
+  inline const size_t& ThreadCollectiveCommunication::size() const
   {
     return size_;
   }
 
-  template<size_t numThreads>
-  inline typename ThreadCollectiveCommunication<numThreads>::CommType ThreadCollectiveCommunication<numThreads>::communicator()
+  inline typename ThreadCollectiveCommunication::CommType ThreadCollectiveCommunication::communicator()
   {
     return comm_;
   }
 
-  template<size_t numThreads>
-  inline void ThreadCollectiveCommunication<numThreads>::barrier()
+  inline void ThreadCollectiveCommunication::barrier()
   {
     std::unique_lock<std::mutex> lock(mtx_);
     const size_t oldSecCount = seccount_;
@@ -214,91 +206,78 @@ namespace Dune {
     }
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<numThreads>::createBuffer_()
+  inline void ThreadCollectiveCommunication::createBuffer_()
   {
-    bufferptr_ = new std::array<T,numThreads>();
+    bufferptr_ = new std::vector<T>(size_);
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<numThreads>::createBuffer()
+  inline void ThreadCollectiveCommunication::createBuffer()
   {
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication<numThreads>::createBuffer_<T>,this);
+    std::call_once(bufferflag_,&ThreadCollectiveCommunication::createBuffer_<T>,this);
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<numThreads>::setBuffer(const T& value, const size_t& tid)
+  inline void ThreadCollectiveCommunication::setBuffer(const T& value, const size_t& tid)
   {
     barrier(); // checkpoint: the buffer is allocated
-    (*(static_cast<std::array<T,numThreads>*>(bufferptr_)))[tid] = value;
+    (*(static_cast<std::vector<T>*>(bufferptr_)))[tid] = value;
     barrier(); // checkpoitn: the buffer is set
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline std::array<T,numThreads>& ThreadCollectiveCommunication<numThreads>::getBuffer() const
+  inline std::vector<T>& ThreadCollectiveCommunication::getBuffer() const
   {
-    return *(static_cast<std::array<T,numThreads>*>(bufferptr_));
+    return *(static_cast<std::vector<T>*>(bufferptr_));
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<numThreads>::deleteBuffer_()
+  inline void ThreadCollectiveCommunication::deleteBuffer_()
   {
-    delete static_cast<std::array<T,numThreads>*>(bufferptr_);
+    delete static_cast<std::vector<T>*>(bufferptr_);
     bufferptr_ = nullptr;
   }
 
-  template<size_t numThreads>
   template<typename T>
-  inline void ThreadCollectiveCommunication<numThreads>::deleteBuffer()
+  inline void ThreadCollectiveCommunication::deleteBuffer()
   {
     barrier(); // checkpoint: the buffer isn't needed anymore
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication<numThreads>::deleteBuffer_<T>,this);
+    std::call_once(bufferflag_,&ThreadCollectiveCommunication::deleteBuffer_<T>,this);
     barrier(); // checkpoint: the buffer is free
   }
 
-  template<typename C>
-  inline ThreadParadigm<C>::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
+  inline ThreadParadigm::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
   {}
 
-  template<typename C>
-  inline void ThreadParadigm<C>::setParadigm(CollectiveCommunicationType& colComm, const size_t& tid)
+  inline void ThreadParadigm::setParadigm(CollectiveCommunicationType& colComm, const size_t& tid)
   {
     colcomm_ = colComm;
     tid_ = tid;
   }
 
-  template<typename C>
-  inline size_t ThreadParadigm<C>::threadID() const
+  inline size_t ThreadParadigm::threadID() const
   {
     return tid_;
   }
 
-  template<typename C>
-  inline size_t ThreadParadigm<C>::numThreads() const
+  inline size_t ThreadParadigm::numThreads() const
   {
     return colcomm_.size();
   }
 
-  template<typename C>
-  inline typename ThreadParadigm<C>::CollectiveCommunicationType& ThreadParadigm<C>::collCommunicator() const
+  inline typename ThreadParadigm::CollectiveCommunicationType& ThreadParadigm::collCommunicator() const
   {
     return colcomm_;
   }
 
-  template<typename C>
-  inline typename ThreadParadigm<C>::CommType ThreadParadigm<C>::communicator()
+  inline typename ThreadParadigm::CommType ThreadParadigm::communicator()
   {
     return colcomm_.communicator();
   }
 
-  template<typename C>
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList>
-  inline RemoteIndexList* ThreadParadigm<C>::createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target)
+  inline RemoteIndexList* ThreadParadigm::createRemoteIndexList(const ParallelIndexSet* source,const ParallelIndexSet* target)
   {
     // index list
     RemoteIndexList* remoteIndexList = new RemoteIndexList();
@@ -328,9 +307,8 @@ namespace Dune {
     return remoteIndexList;
   }
 
-  template<typename C>
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList,typename RemoteIndexMap>
-  inline void ThreadParadigm<C>::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds, bool includeSelf)
+  inline void ThreadParadigm::buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices, std::set<int>& neighbourIds, bool includeSelf)
   {
     // is the source different form the target?
     bool differentTarget(source != target);
