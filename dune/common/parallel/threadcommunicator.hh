@@ -60,6 +60,11 @@ namespace Dune
     /** @brief The type of the map that maps interface information to processors. */
     typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
+    /** @brief The pointer to the collective communication. */
+    ThreadCollectiveCommunication* collcommptr_;
+
+    size_t threadID_;
+
     /** @brief The interface we currently work with. */
     InterfaceMap interfaces_;
 
@@ -70,7 +75,8 @@ namespace Dune
     unsigned int numcolors_;
 
     /** @brief Compute the coloring scheme.*/
-    void computeColoring();
+    template<class I>
+    void computeColoring(const I& interface);
 
     /** @brief  Functors to update the values in the target. */
     template<class Data, class GatherScatter,typename IndexedTypeFlag>
@@ -98,6 +104,8 @@ namespace Dune
   template<typename Data, typename I>
   void ThreadCommunicator::build(const I& interface)
   {
+    collcommptr_ = &(interface.remoteIndices().parallelParadigm().collCommunicator());
+    threadID_ = interface.remoteIndices().parallelParadigm().threadID();
     interfaces_ = interface.interfaces();
     computeColoring(interface);
   }
@@ -105,6 +113,8 @@ namespace Dune
   template<typename Data, typename I>
   void ThreadCommunicator::build(const Data& source, const Data& target, const I& interface)
   {
+    collcommptr_ = &(interface.remoteIndices().parallelParadigm().collCommunicator());
+    threadID_ = interface.remoteIndices().parallelParadigm().threadID();
     interfaces_ = interface.interfaces();
     computeColoring(interface);
   }
@@ -184,62 +194,56 @@ namespace Dune
   template<typename GatherScatter, bool FORWARD, typename Data>
   void ThreadCommunicator::sendRecv(const Data& source, Data& target)
   {
-    RemoteIndicesType& remoteIndices = interface_.remoteIndices();
-    ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
-    CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
-
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     Updater<Data,GatherScatter,Flag> updater;
 
     typedef typename InterfaceMap::const_iterator const_iterator;
 
-    const size_t tid = parallelParadigm.threadID();
-
     // create the buffer to communicate data
     typedef std::pair<Data*,const InterfaceMap*> BufferType;
-    collComm.template createBuffer<BufferType>();
-    collComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), tid);
+    collcommptr_->template createBuffer<BufferType>();
+    collcommptr_->template setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
 
     if(FORWARD)
     {
       for(int color = 0; color != numcolors_ ; ++color)
       {
-        if(colors_[tid] == color)
+        if(colors_[threadID_] == color)
         {
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.first.size();
-            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
+            Data& dest = *(((collcommptr_->template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((collcommptr_->template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
             for(size_t i=0; i < size; i++)
               updater(it->second.first[i],source,itDest->second.second[i],dest);
           }
         }
-        collComm.barrier();
+        collcommptr_->barrier();
       }
     }
     else
     {
       for(int color = 0; color != numcolors_ ; ++color)
       {
-        if(colors_[tid] == color)
+        if(colors_[threadID_] == color)
         {
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.second.size();
-            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(tid);
+            Data& dest = *(((collcommptr_->template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest = (((collcommptr_->template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
             for(size_t i=0; i < size; i++)
               updater(it->second.second[i],source,itDest->second.first[i],dest);
           }
         }
-        collComm.barrier();
+        collcommptr_->barrier();
       }
     }
 
-    collComm.template deleteBuffer<BufferType>();
+    collcommptr_->template deleteBuffer<BufferType>();
   }
 
 
