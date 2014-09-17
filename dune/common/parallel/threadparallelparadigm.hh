@@ -29,23 +29,12 @@ namespace Dune
    * @author Marco Agnese, Markus Blatt
    */
 
-  /** @brief The communicator for thread. */
-  class THREAD_Comm
-  {
-  };
-
   /** @brief ThreadCollectiveCommunication allows communication between threads using shared memeory. */
   class ThreadCollectiveCommunication
   {
   public:
-    /** @brief The type of the communicator. */
-    typedef THREAD_Comm CommType;
-
     /** @brief Default constructor. */
-    ThreadCollectiveCommunication(const size_t& numThreads);
-
-    /** @brief Get the communicator. */
-    inline CommType communicator();
+    inline ThreadCollectiveCommunication(const size_t& numThreads);
 
     /** @brief Get the number of threads. */
     inline const size_t& size() const;
@@ -74,9 +63,6 @@ namespace Dune
     {}
 
   private:
-    /** @brief Thread communicator. */
-    CommType comm_;
-
     /** @brief Number of threads. */
     size_t size_;
 
@@ -107,6 +93,25 @@ namespace Dune
     inline void deleteBuffer_();
   };
 
+  /** @brief The communicator for thread. */
+  class ThreadCommunicator
+  {
+  public:
+    /** @brief Constructor. */
+    inline ThreadCommunicator(const size_t& numThreads);
+
+    /** @brief Return a constant reference to the ThreadCollectiveCommunication used. */
+    inline ThreadCollectiveCommunication& collCommunicator() const;
+
+    /** @brief Destructor. */
+    inline ~ThreadCommunicator()
+    {}
+
+  private:
+    /** @brief The ThreadCollectiveCommunication used. */
+    std::shared_ptr<ThreadCollectiveCommunication> collcommptr_;
+  };
+
   /** @brief ThreadParadigm. */
   class ThreadParadigm
   {
@@ -115,16 +120,16 @@ namespace Dune
     typedef ThreadCollectiveCommunication CollectiveCommunicationType;
 
     /** @brief The type of the communicator. */
-    typedef typename CollectiveCommunicationType::CommType CommType;
+    typedef ThreadCommunicator CommType;
 
     /** @brief Constructor. */
-    inline ThreadParadigm(CollectiveCommunicationType& collComm, const size_t& tid);
+    inline ThreadParadigm(const CommType& comm, const size_t& tid);
 
     /** @brief Copy is forbidden. */
     ThreadParadigm(const ThreadParadigm&) = delete;
 
     /** @brief Null communicator. */
-    constexpr static CommType nullComm = CommType();
+    //constexpr static CommType nullComm = CommType();
 
     /** @brief Get the thread ID. */
     inline size_t threadID() const;
@@ -158,10 +163,13 @@ namespace Dune
     inline unsigned int& numColors();
 
     /** @brief Destructor. */
-    ~ThreadParadigm()
+    inline ~ThreadParadigm()
     {}
 
   private:
+    /** @brief The communicator. */
+    CommType comm_;
+
     /** @brief The collective communication. */
     CollectiveCommunicationType& collcomm_;
 
@@ -184,18 +192,13 @@ namespace Dune
 
   /** @} */
 
-  ThreadCollectiveCommunication::ThreadCollectiveCommunication(const size_t& numThreads) :
-    comm_(), size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
+  inline ThreadCollectiveCommunication::ThreadCollectiveCommunication(const size_t& numThreads) :
+    size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
   inline const size_t& ThreadCollectiveCommunication::size() const
   {
     return size_;
-  }
-
-  inline typename ThreadCollectiveCommunication::CommType ThreadCollectiveCommunication::communicator()
-  {
-    return comm_;
   }
 
   inline void ThreadCollectiveCommunication::barrier()
@@ -258,8 +261,16 @@ namespace Dune
     barrier(); // checkpoint: the buffer is free
   }
 
-  inline ThreadParadigm::ThreadParadigm(CollectiveCommunicationType& collComm, const size_t& tid) :
-    collcomm_(collComm), tid_(tid), size_(collcomm_.size()), colors_(0), numcolors_(0)
+  inline ThreadCommunicator::ThreadCommunicator(const size_t& numThreads) : collcommptr_(new ThreadCollectiveCommunication(numThreads))
+  {}
+
+  inline ThreadCollectiveCommunication& ThreadCommunicator::collCommunicator() const
+  {
+    return *collcommptr_;
+  }
+
+  inline ThreadParadigm::ThreadParadigm(const CommType& comm, const size_t& tid) :
+    comm_(comm), collcomm_(comm.collCommunicator()), tid_(tid), size_(collcomm_.size()), colors_(0), numcolors_(0)
   {}
 
   inline size_t ThreadParadigm::threadID() const
@@ -279,7 +290,7 @@ namespace Dune
 
   inline typename ThreadParadigm::CommType ThreadParadigm::communicator()
   {
-    return collcomm_.communicator();
+    return comm_;
   }
 
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList>

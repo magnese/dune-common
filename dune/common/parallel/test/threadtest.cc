@@ -12,7 +12,6 @@
 
 #include <dune/common/parallel/indexset.hh>
 #include <dune/common/parallel/plocalindex.hh>
-#include <dune/common/parallel/threadparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
 #include <dune/common/parallel/threadcommunicatorparadigm.hh>
@@ -45,7 +44,7 @@ public:
 
 // function run by each thread
 template<class C>
-void exec(C& collComm, const size_t tid, std::mutex& osmutex){
+void exec(const C& comm, const size_t tid, std::mutex& osmutex){
 
   // define parallel local index and parallel index set
   enum flags{owner,ghost};
@@ -76,7 +75,7 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
 
   // create parallel paradigm
   typedef Dune::ThreadParadigm ParallelParadigmType;
-  ParallelParadigmType pp(collComm,tid);
+  ParallelParadigmType pp(comm,tid);
 
   // set remote indices
   typedef Dune::RemoteIndices<ParallelIndexType,ParallelParadigmType> RemoteIndicesType;
@@ -155,8 +154,8 @@ int main(int argc,char** argv){
 
   // create thread communicator
   const size_t numThreads(2);
-  typedef Dune::ThreadCollectiveCommunication CollectiveCommunication;
-  CollectiveCommunication collComm(numThreads);
+  typedef Dune::ThreadCommunicator CommType;
+  CommType comm(numThreads);
 
   // mutex to avoid race condition in output stream
   std::mutex osmutex;
@@ -164,7 +163,7 @@ int main(int argc,char** argv){
   // launch a group of threads to run exec()
   std::vector<std::thread> t(numThreads);
 
-  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<CollectiveCommunication>,std::ref(collComm),tid,std::ref(osmutex));
+  for(size_t tid=0;tid!=numThreads;++tid) t[tid]=std::thread(exec<CommType>,std::ref(comm),tid,std::ref(osmutex));
   for(size_t tid=0;tid!=numThreads;++tid) t[tid].join();
 
   return 0;
