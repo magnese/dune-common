@@ -14,7 +14,7 @@
 #include <dune/common/parallel/plocalindex.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/threadcommunicatorparadigm.hh>
+#include <dune/common/parallel/communicator.hh>
 
 // policy: copy
 template<typename T>

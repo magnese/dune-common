@@ -4,8 +4,8 @@
 #ifndef DUNE_COMMUNICATOR
 #define DUNE_COMMUNICATOR
 
-//#include "mpicommunicatorparadigm.hh"
-//#include "threadcommunicatorparadigm.hh"
+#include "mpicommunicatorparadigm.hh"
+#include "threadcommunicatorparadigm.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/common/stdstreams.hh>
@@ -146,8 +146,8 @@ namespace Dune
   };
 
   /** @brief Error thrown if there was a problem with the communication. */
-  class CommunicationError : public IOError
-  {};
+  //class CommunicationError : public IOError
+  //{};
 
   /** @brief GatherScatter default implementation that just copies data. */
   template<class T>

@@ -24,6 +24,13 @@ namespace Dune
    * @author Marco Agnese, Markus Blatt
    */
 
+  struct SizeOne;
+
+  struct VariableSize;
+
+  template<class V>
+  struct CommPolicy;
+
   /** @brief Thread communicator which uses a coloring algorithm to send and receive data. */
   class ThreadCommunicatorParadigm
   {

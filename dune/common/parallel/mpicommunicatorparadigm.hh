@@ -27,6 +27,17 @@ namespace Dune
    * @author Marco Agnese, Markus Blatt
    */
 
+  struct SizeOne;
+
+  struct VariableSize;
+
+  template<class V>
+  struct CommPolicy;
+
+  /** @brief Error thrown if there was a problem with the communication. */
+  class CommunicationError : public IOError
+  {};
+
   /**
    * @brief An utility class for communicating distributed data structures via MPI datatypes.
    * This communicator creates special MPI datatypes that address the non contiguous elements to be send and received.

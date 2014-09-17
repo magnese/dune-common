@@ -4,7 +4,7 @@
 #include <dune/common/parallel/indexset.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/mpicommunicatorparadigm.hh>
+#include <dune/common/parallel/communicator.hh>
 #include <dune/common/enumset.hh>
 #include <algorithm>
 #include <iostream>
