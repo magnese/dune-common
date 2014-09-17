@@ -11,7 +11,7 @@ parallelinclude_HEADERS = \
     interface.hh        \
     localindex.hh       \
     mpicollectivecommunication.hh \
-		mpicommunicator.hh	\
+		mpicommunicatorparadigm.hh	\
     mpiguard.hh         \
     mpihelper.hh        \
 		mpiparallelparadigm.hh \
@@ -19,7 +19,7 @@ parallelinclude_HEADERS = \
     plocalindex.hh      \
     remoteindices.hh    \
     selection.hh        \
-		threadcommunicator.hh	\
+		threadcommunicatorparadigm.hh	\
 		threadparallelparadigm.hh	\
     variablesizecommunicator.hh
 

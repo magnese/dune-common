@@ -15,7 +15,7 @@
 #include <dune/common/parallel/threadparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/threadcommunicator.hh>
+#include <dune/common/parallel/threadcommunicatorparadigm.hh>
 
 // policy: copy
 template<typename T>
@@ -135,7 +135,7 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   osmutex.unlock();
 
   // create communicator
-  typedef Dune::Communicator<Dune::ThreadCommunicator> DuneCommunicator;
+  typedef Dune::Communicator<Dune::ThreadCommunicatorParadigm> DuneCommunicator;
   DuneCommunicator duneComm;
   duneComm.template build<VectorType>(infS);
 

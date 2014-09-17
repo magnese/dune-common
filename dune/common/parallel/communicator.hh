@@ -4,7 +4,8 @@
 #ifndef DUNE_COMMUNICATOR
 #define DUNE_COMMUNICATOR
 
-#include "mpicommunicator.hh"
+//#include "mpicommunicatorparadigm.hh"
+//#include "threadcommunicatorparadigm.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/typetraits.hh>
 #include <dune/common/stdstreams.hh>
@@ -161,7 +162,7 @@ namespace Dune
   };
 
   /** @brief Communicator interface. It provieds the methods to send and receive data. */
-  template<class Imp/*=MPICommunicator*/>
+  template<class Imp/*=MPICommunicatorParadigm*/>
   class Communicator
   {
 

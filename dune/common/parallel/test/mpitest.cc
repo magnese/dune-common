@@ -15,7 +15,7 @@
 #include <dune/common/parallel/mpiparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/mpicommunicator.hh>
+#include <dune/common/parallel/mpicommunicatorparadigm.hh>
 
 // policy: copy
 template<typename T>
@@ -165,7 +165,7 @@ int main(int argc,char** argv){
     }
 
     // create communicator
-    typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+    typedef Dune::Communicator<Dune::MPICommunicatorParadigm> DuneCommunicator;
     DuneCommunicator duneComm;
     duneComm.build(al,al,infS);
 

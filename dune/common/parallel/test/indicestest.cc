@@ -2,10 +2,9 @@
 // vi: set et ts=4 sw=2 sts=2:
 #include "config.h"
 #include <dune/common/parallel/indexset.hh>
-#include <dune/common/parallel/mpiparallelparadigm.hh>
 #include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/interface.hh>
-#include <dune/common/parallel/mpicommunicator.hh>
+#include <dune/common/parallel/mpicommunicatorparadigm.hh>
 #include <dune/common/enumset.hh>
 #include <algorithm>
 #include <iostream>
@@ -76,7 +75,6 @@ struct ArrayGatherScatter
   static void scatter(Array& a, double v, int i);
 
 };
-
 
 inline double ArrayGatherScatter::gather(const Array& a, int i)
 {
@@ -363,7 +361,7 @@ void testIndicesBuffered(MPI_Comm comm)
 
   //accuInterface.print();
 
-  typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+  typedef Dune::Communicator<Dune::MPICommunicatorParadigm> DuneCommunicator;
   DuneCommunicator accumulator, overlapExchanger;
 
   accumulator.build<Array,InterfaceType>(accuInterface);
@@ -628,7 +626,7 @@ void testRedistributeIndicesBuffered(MPI_Comm comm)
   redistributeInterface.build(redistributeIndices, fowner, fowner);
   overlapInterface.build(overlapIndices, fowner, foverlap);
 
-  typedef Dune::Communicator<Dune::MPICommunicator> DuneCommunicator;
+  typedef Dune::Communicator<Dune::MPICommunicatorParadigm> DuneCommunicator;
   DuneCommunicator redistribute, overlapComm;
 
   redistribute.build(array, redistributedArray, redistributeInterface);

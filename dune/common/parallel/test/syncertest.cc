@@ -4,7 +4,7 @@
 
 #if HAVE_MPI
 
-#include <dune/common/parallel/mpiparallelparadigm.hh>
+#include <dune/common/parallel/remoteindices.hh>
 #include <dune/common/parallel/indicessyncer.hh>
 #include <dune/common/sllist.hh>
 #include <string>

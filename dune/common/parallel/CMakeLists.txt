@@ -9,7 +9,7 @@ install(FILES
         interface.hh
         localindex.hh
         mpicollectivecommunication.hh
-        mpicommunicator.hh
+        mpicommunicatorparadigm.hh
         mpiguard.hh
         mpihelper.hh
         mpiparallelparadigm.hh
@@ -17,7 +17,7 @@ install(FILES
         plocalindex.hh
         remoteindices.hh
         selection.hh
-        threadcommunicator.hh
+        threadcommunicatorparadigm.hh
         threadparallelparadigm.hh
         variablesizecommunicator.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dune/common/parallel)

@@ -15,8 +15,10 @@
 #include <algorithm>
 #include <mutex>
 #include <condition_variable>
+#include <memory>
 
-namespace Dune {
+namespace Dune
+{
   /** @addtogroup Common_Parallel
    *
    * @{
@@ -32,7 +34,7 @@ namespace Dune {
   {
   };
 
-  /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
+  /** @brief ThreadCollectiveCommunication allows communication between threads using shared memeory. */
   class ThreadCollectiveCommunication
   {
   public:
