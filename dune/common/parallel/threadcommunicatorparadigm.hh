@@ -60,9 +60,10 @@ namespace Dune
     /** @brief The type of the map that maps interface information to processors. */
     typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
-    /** @brief The pointer to the collective communication. */
+    /** @brief The collective communication. */
     ThreadCollectiveCommunication* collcommptr_;
 
+    /** @brief The thread ID. */
     size_t threadID_;
 
     /** @brief The colors of the threads. colors_[i] = color of thread i. */
@@ -100,6 +101,7 @@ namespace Dune
   template<typename Data, typename I>
   void ThreadCommunicatorParadigm::build(const I& interface)
   {
+
     collcommptr_ = &(interface.parallelParadigm().collCommunicator());
     threadID_ = interface.parallelParadigm().threadID();
     colorsptr_ = &(interface.parallelParadigm().colors());
@@ -132,12 +134,14 @@ namespace Dune
     typedef typename CommPolicy<Data>::IndexedTypeFlag Flag;
     Updater<Data,GatherScatter,Flag> updater;
 
+    ThreadCollectiveCommunication& collComm(*collcommptr_);
+
     typedef typename InterfaceMap::const_iterator const_iterator;
 
     // create the buffer to communicate data
     typedef std::pair<Data*,const InterfaceMap*> BufferType;
-    collcommptr_->template createBuffer<BufferType>();
-    collcommptr_->template setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
+    collComm.template createBuffer<BufferType>();
+    collComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
 
     if(FORWARD)
     {
@@ -149,13 +153,13 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.first.size();
-            Data& dest = *(((collcommptr_->template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((collcommptr_->template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
+            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
             for(size_t i=0; i < size; i++)
               updater(it->second.first[i],source,itDest->second.second[i],dest);
           }
         }
-        collcommptr_->barrier();
+        collComm.barrier();
       }
     }
     else
@@ -168,17 +172,17 @@ namespace Dune
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
             size_t size = it->second.second.size();
-            Data& dest = *(((collcommptr_->template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest = (((collcommptr_->template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
+            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest = (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
             for(size_t i=0; i < size; i++)
               updater(it->second.second[i],source,itDest->second.first[i],dest);
           }
         }
-        collcommptr_->barrier();
+        collComm.barrier();
       }
     }
 
-    collcommptr_->template deleteBuffer<BufferType>();
+    collComm.template deleteBuffer<BufferType>();
   }
 
 }

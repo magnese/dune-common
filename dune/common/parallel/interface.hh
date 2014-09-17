@@ -179,11 +179,11 @@ namespace Dune
   class CommunicationInterface : public InterfaceBuilder
   {
   public:
-    /** @brief The type of the map form process number to InterfaceInformation for sending and receiving to and from it. */
-    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InformationMap;
-
     /** @brief The type of the parallel paradigm. */
     typedef P ParallelParadigm;
+
+    /** @brief The type of the map form process number to InterfaceInformation for sending and receiving to and from it. */
+    typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InformationMap;
 
     /** @brief The type of the communicator. */
     typedef typename ParallelParadigm::CommType CommType;
@@ -206,11 +206,11 @@ namespace Dune
     /** @brief Frees memory allocated during the build. */
     void free();
 
-    /** @brief Get the communicator. */
-    inline CommType communicator() const;
-
     /** @brief Get the parallel paradigm used. */
     inline ParallelParadigm& parallelParadigm() const;
+
+    /** @brief Get the communicator. */
+    inline CommType communicator() const;
 
     /**
      * @brief Get information about the interfaces.
@@ -232,11 +232,11 @@ namespace Dune
     CommunicationInterface(ParallelParadigm& parallel) : parallelptr_(&parallel), communicator_(parallel.communicator()), interfaces_()
     {}
 
-    /** @brief Constructor. */
-    CommunicationInterface(typename ParallelParadigm::CommType comm) : parallelptr_(), communicator_(comm), interfaces_()
+    /** @brief Constructor. Use only with MPIParadigm*/
+    CommunicationInterface(const CommType& comm) : parallelptr_(), communicator_(comm), interfaces_()
     {}
 
-    /** @brief Constructor. */
+    /** @brief Constructor. Use only with MPIParadigm.*/
     CommunicationInterface() : parallelptr_(), communicator_(ParallelParadigm::nullComm), interfaces_()
     {}
 
@@ -275,7 +275,7 @@ namespace Dune
     inline virtual ~CommunicationInterface();
 
   private:
-    /** @brief The pointer to the parallel paradigm. */
+    /** @brief The parallel paradigm we use. */
     ParallelParadigm* parallelptr_;
 
     /** @brief The communicator we use. */
