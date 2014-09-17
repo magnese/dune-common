@@ -162,10 +162,9 @@ namespace Dune
   };
 
   /** @brief Communicator interface. It provieds the methods to send and receive data. */
-  template<class Imp/*=MPICommunicatorParadigm*/>
+  template<class Imp=MPICommunicatorParadigm>
   class Communicator
   {
-
   public:
     /** @brief The type of the parallel communicator implementation. */
     typedef Imp CommunicatorImplementation;
@@ -303,7 +302,7 @@ namespace Dune
   };
 
   /** @brief Typedef for compatibility with the old implementation of BufferedCommunicator. */
-  //typedef Communicator<> BufferedCommunicator;
+  typedef Communicator<> BufferedCommunicator;
 #ifndef DOXYGEN
 
   template<typename V>

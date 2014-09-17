@@ -970,12 +970,12 @@ namespace Dune
   /** @} */
 }
 
-//#else
+#else
 /** @brief Class needed when MPI is not defined. */
-//namespace Dune
-//{
-//struct MPICommunicatorParadigm{};
-//}
-
+namespace Dune
+{
+struct MPICommunicatorParadigm{};
+}
 #endif
+
 #endif
