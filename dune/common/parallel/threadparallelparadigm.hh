@@ -35,80 +35,79 @@ namespace Dune {
   /** @brief ThreadCommunicator allows communication between threads using shared memeory. */
   class ThreadCollectiveCommunication
   {
-    public:
-      /** @brief The type of the communicator. */
-      typedef THREAD_Comm CommType;
+  public:
+    /** @brief The type of the communicator. */
+    typedef THREAD_Comm CommType;
 
-      /** @brief Default constructor. */
-      ThreadCollectiveCommunication(const size_t& numThreads);
+    /** @brief Default constructor. */
+    ThreadCollectiveCommunication(const size_t& numThreads);
 
-      /** @brief Destructor. */
-      inline ~ThreadCollectiveCommunication()
-      {}
+    /** @brief Get the communicator. */
+    inline CommType communicator();
 
-      /** @brief Get the communicator. */
-      inline CommType communicator();
+    /** @brief Get the number of threads. */
+    inline const size_t& size() const;
 
-      /** @brief Get the number of threads. */
-      inline const size_t& size() const;
+    /** @brief Barrier to syncronise threads. */
+    inline void barrier();
 
-      /** @brief Barrier to syncronise threads. */
-      inline void barrier();
+    /** @brief Create buffer to share data among threads. */
+    template<class T>
+    inline void createBuffer();
 
-      /** @brief Create buffer to share data among threads. */
-      template<class T>
-      inline void createBuffer();
+    /** @brief Set a value into the buffer. */
+    template<class T>
+    inline void setBuffer(const T& value, const size_t& tid);
 
-      /** @brief Set a value into the buffer. */
-      template<class T>
-      inline void setBuffer(const T& value, const size_t& tid);
+    /** @brief Get buffer. */
+    template<class T>
+    inline std::vector<T>& getBuffer() const;
 
-      /** @brief Get buffer. */
-      template<class T>
-      inline std::vector<T>& getBuffer() const;
+    /** @brief Delete buffer. */
+    template<class T>
+    inline void deleteBuffer();
 
-      /** @brief Delete buffer. */
-      template<class T>
-      inline void deleteBuffer();
+    /** @brief Destructor. */
+    inline ~ThreadCollectiveCommunication()
+    {}
 
-    private:
-      /** @brief Thread communicator. */
-      CommType comm_;
+  private:
+    /** @brief Thread communicator. */
+    CommType comm_;
 
-      /** @brief Number of threads. */
-      size_t size_;
+    /** @brief Number of threads. */
+    size_t size_;
 
-      /** @brief Flag used by std::call_once function. */
-      std::once_flag bufferflag_;
+    /** @brief Flag used by std::call_once function. */
+    std::once_flag bufferflag_;
 
-      /** @brief Pointer to the buffer. */
-      void* bufferptr_;
+    /** @brief Pointer to the buffer. */
+    void* bufferptr_;
 
-      /** @brief Mutex used for the barrier. */
-      std::mutex mtx_;
+    /** @brief Mutex used for the barrier. */
+    std::mutex mtx_;
 
-      /** @brief Counter used for the barrier. */
-      size_t count_;
+    /** @brief Counter used for the barrier. */
+    size_t count_;
 
-      /** @brief Second counter used for the barrier. */
-      size_t seccount_;
+    /** @brief Second counter used for the barrier. */
+    size_t seccount_;
 
-      /** @brief Condition variable used for the barrier. */
-      std::condition_variable condvar_;
+    /** @brief Condition variable used for the barrier. */
+    std::condition_variable condvar_;
 
-      /** @brief Allocate the buffer. */
-      template<class T>
-      inline void createBuffer_();
+    /** @brief Allocate the buffer. */
+    template<class T>
+    inline void createBuffer_();
 
-      /** @brief Deallocate the buffer. */
-      template<class T>
-      inline void deleteBuffer_();
+    /** @brief Deallocate the buffer. */
+    template<class T>
+    inline void deleteBuffer_();
   };
 
   /** @brief ThreadParadigm. */
   class ThreadParadigm
   {
-
   public:
     /** @brief The type of the collective communication. */
     typedef ThreadCollectiveCommunication CollectiveCommunicationType;
@@ -147,16 +146,34 @@ namespace Dune {
     inline void buildRemote(const ParallelIndexSet* source, const ParallelIndexSet* target, RemoteIndexMap& remoteIndices,
                             std::set<int>& neighbourIds, bool includeSelf);
 
+    /** @brief Compute the coloring scheme.*/
+    void computeColoring(const std::set<int>& neighbours);
+
+    /** @brief The threads colors. */
+    inline std::vector<int>& colors();
+
+    /** @brief The number of different colors. */
+    inline unsigned int& numColors();
+
     /** @brief Destructor. */
     ~ThreadParadigm()
     {}
 
   private:
     /** @brief The collective communication. */
-    CollectiveCommunicationType& colcomm_;
+    CollectiveCommunicationType& collcomm_;
 
     /** @brief The thread ID. */
     size_t tid_;
+
+    /** @brief Number of threads. */
+    size_t size_;
+
+    /** @brief The colors of the threads. colors_[i] = color of thread i. */
+    std::vector<int> colors_;
+
+    /** @brief Number of different colors present in colors_. */
+    unsigned int numcolors_;
 
     /** @brief Given a source and a target, it creates the corresponding RemoteIndexList. */
     template<bool ignorePublic,class ParallelIndexSet,class RemoteIndexList>
@@ -239,7 +256,8 @@ namespace Dune {
     barrier(); // checkpoint: the buffer is free
   }
 
-  inline ThreadParadigm::ThreadParadigm(CollectiveCommunicationType& colComm, const size_t& tid) : colcomm_(colComm), tid_(tid)
+  inline ThreadParadigm::ThreadParadigm(CollectiveCommunicationType& collComm, const size_t& tid) :
+    collcomm_(collComm), tid_(tid), size_(collcomm_.size()), colors_(0), numcolors_(0)
   {}
 
   inline size_t ThreadParadigm::threadID() const
@@ -249,17 +267,17 @@ namespace Dune {
 
   inline size_t ThreadParadigm::numThreads() const
   {
-    return colcomm_.size();
+    return size_;
   }
 
   inline typename ThreadParadigm::CollectiveCommunicationType& ThreadParadigm::collCommunicator() const
   {
-    return colcomm_;
+    return collcomm_;
   }
 
   inline typename ThreadParadigm::CommType ThreadParadigm::communicator()
   {
-    return colcomm_.communicator();
+    return collcomm_.communicator();
   }
 
   template<bool ignorePublic,typename ParallelIndexSet,typename RemoteIndexList>
@@ -299,14 +317,14 @@ namespace Dune {
     // is the source different form the target?
     bool differentTarget(source != target);
 
-    if(colcomm_.size()==1 && !(differentTarget || includeSelf))
+    if(size_==1 && !(differentTarget || includeSelf))
       // nothing to do
       return;
 
     // create buffer to communicate indices
     typedef std::pair<const ParallelIndexSet*,const ParallelIndexSet*> IndicesPairType;
-    colcomm_.template createBuffer<IndicesPairType>();
-    colcomm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
+    collcomm_.template createBuffer<IndicesPairType>();
+    collcomm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
     // indices list for sending and receive
     RemoteIndexList* send(nullptr);
@@ -314,16 +332,16 @@ namespace Dune {
 
     if(neighbourIds.empty())
     {
-      for(size_t remoteProc = 0; remoteProc != colcomm_.size(); ++remoteProc)
+      for(size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
-          send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+          send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
 
           if(!(send->empty()))
             neighbourIds.insert(remoteProc);
           if(differentTarget && (!(send->empty())))
-            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
           else
             receive=send;
 
@@ -333,15 +351,15 @@ namespace Dune {
     }
     else
     {
-      for(size_t remoteProc = 0; remoteProc != colcomm_.size(); ++remoteProc)
+      for(size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
           if(neighbourIds.find(remoteProc)!=neighbourIds.end())
           {
-            send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+            send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
             if(differentTarget)
-              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(colcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
             else
               receive=send;
 
@@ -352,8 +370,64 @@ namespace Dune {
 
     }
 
-    colcomm_.template deleteBuffer<IndicesPairType>();
+    collcomm_.template deleteBuffer<IndicesPairType>();
 
+  }
+
+  void ThreadParadigm::computeColoring(const std::set<int>& neighbours)
+  {
+    colors_.clear();
+    colors_.resize(size_, -1);
+    colors_[0] = 0;
+
+    if(size_ > 1)
+    {
+      // compute adiajency matrix of the graph rappresenting the interaction between threads
+      std::vector<std::vector<int>> adjMatrix(size_,std::vector<int>(size_,-1));
+      // create buffer to communicate neighbours
+      collcomm_.template createBuffer<const std::set<int>*>();
+      collcomm_.template setBuffer<const std::set<int>*>(&neighbours, tid_);
+
+      typedef typename std::set<int>::iterator SetIterType;
+      for(size_t i = 0; i != size_; ++i)
+      {
+        const std::set<int>* ptr = (collcomm_.template getBuffer<const std::set<int>*>())[i];
+        SetIterType itEnd = ptr->end();
+        for(SetIterType it = ptr->begin(); it != itEnd; ++it)
+          adjMatrix[i][*it] = 1;
+      }
+      collcomm_.template deleteBuffer<const std::set<int>*>();
+
+      // compute colouring with a greedy algorithm
+      for(size_t i = 1; i != size_; ++i)
+      {
+        int color = 0;
+        for(size_t j = 0; j != size_; ++j)
+        {
+          if(adjMatrix[i][j] == 1)
+          {
+            if(colors_[j] > -1)
+            {
+              color = std::max(color,colors_[j]+1);
+            }
+          }
+        }
+        colors_[i] = color;
+      }
+
+    }
+
+    numcolors_ = *(std::max_element(colors_.begin(),colors_.end()))+1;
+  }
+
+  inline std::vector<int>& ThreadParadigm::colors()
+  {
+    return colors_;
+  }
+
+  inline unsigned int& ThreadParadigm::numColors()
+  {
+    return numcolors_;
   }
 
   /** @} */

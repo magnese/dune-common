@@ -4,7 +4,6 @@
 #ifndef DUNE_INTERFACE_HH
 #define DUNE_INTERFACE_HH
 
-#include "mpiparallelparadigm.hh"
 #include "remoteindices.hh"
 #include <dune/common/enumset.hh>
 
@@ -179,7 +178,6 @@ namespace Dune
   template<class P=MPIParadigm>
   class CommunicationInterface : public InterfaceBuilder
   {
-
   public:
     /** @brief The type of the map form process number to InterfaceInformation for sending and receiving to and from it. */
     typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InformationMap;
@@ -209,7 +207,10 @@ namespace Dune
     void free();
 
     /** @brief Get the communicator. */
-    CommType communicator() const;
+    inline CommType communicator() const;
+
+    /** @brief Get the parallel paradigm used. */
+    inline ParallelParadigm& parallelParadigm() const;
 
     /**
      * @brief Get information about the interfaces.
@@ -217,7 +218,7 @@ namespace Dune
      * @return Map of the interfaces.
      * The key of the map is the process number and the value is the information pair (first the send and then the receive information).
      */
-    const InformationMap& interfaces() const;
+    inline const InformationMap& interfaces() const;
 
     /**
      * @brief Get information about the interfaces.
@@ -225,18 +226,18 @@ namespace Dune
      * @return Map of the interfaces.
      * The key of the map is the process number and the value is the information pair (first the send and then the receive information).
      */
-    InformationMap& interfaces();
+    inline InformationMap& interfaces();
 
     /** @brief Constructor. */
-    CommunicationInterface(ParallelParadigm& parallel) : communicator_(parallel.communicator()), interfaces_()
+    CommunicationInterface(ParallelParadigm& parallel) : parallelptr_(&parallel), communicator_(parallel.communicator()), interfaces_()
     {}
 
     /** @brief Constructor. */
-    CommunicationInterface(typename ParallelParadigm::CommType comm) : communicator_(comm), interfaces_()
+    CommunicationInterface(typename ParallelParadigm::CommType comm) : parallelptr_(), communicator_(comm), interfaces_()
     {}
 
     /** @brief Constructor. */
-    CommunicationInterface() : communicator_(ParallelParadigm::nullComm), interfaces_()
+    CommunicationInterface() : parallelptr_(), communicator_(ParallelParadigm::nullComm), interfaces_()
     {}
 
     /** @brief Print the interface to std::out for debugging. */
@@ -268,22 +269,47 @@ namespace Dune
       return true;
     }
 
-    /** @brief Destructor. */
-    virtual ~CommunicationInterface();
-
     void strip();
 
-  protected:
+    /** @brief Destructor. */
+    inline virtual ~CommunicationInterface();
+
+  private:
+    /** @brief The pointer to the parallel paradigm. */
+    ParallelParadigm* parallelptr_;
+
     /** @brief The communicator we use. */
     CommType communicator_;
 
-  private:
     /**
      * @brief Information about the interfaces.
      *
      * The key of the map is the process number and the value is the information pair (first the send and then the receive information).
      */
     InformationMap interfaces_;
+
+    /** @brief  Functors to init some parallel paraidgm dependent information in RemoteIndices. */
+    template<class P1, class R1>
+    struct Init
+    {};
+
+    /** @brief Functor specialization for MPIParadigm. */
+    template<class R1>
+    struct Init<MPIParadigm, R1>
+    {
+      inline void operator()(const R1& remoteIndices)
+      {}
+    };
+
+    template<class R1>
+    /** @brief Functor specialization for ThreadParadigm. */
+    struct Init<ThreadParadigm,R1>
+    {
+      inline void operator()(const R1& remoteIndices)
+      {
+        remoteIndices.parallelParadigm().computeColoring(remoteIndices.getNeighbours());
+      }
+    };
 
     template<bool send>
     class InformationBuilder
@@ -377,6 +403,12 @@ namespace Dune
   }
 
   template<typename P>
+  inline typename CommunicationInterface<P>::ParallelParadigm& CommunicationInterface<P>::parallelParadigm() const
+  {
+    return *parallelptr_;
+  }
+
+  template<typename P>
   inline const typename CommunicationInterface<P>::InformationMap& CommunicationInterface<P>::interfaces() const
   {
     return interfaces_;
@@ -417,6 +449,8 @@ namespace Dune
   template<typename R, typename T1, typename T2>
   inline void CommunicationInterface<P>::build(const R& remoteIndices, const T1& sourceFlags, const T2& destFlags)
   {
+    Init<ParallelParadigm,R> init;
+    init(remoteIndices);
     communicator_=remoteIndices.communicator();
 
     assert(interfaces_.empty());

@@ -93,8 +93,8 @@ void exec(C& collComm, const size_t tid, std::mutex& osmutex){
   Dune::EnumItem<flags,ghost> ghostFlags;
   Dune::EnumItem<flags,owner> ownerFlags;
 
-  typedef Dune::Interface<ParallelParadigmType> InterfaceType;
-  InterfaceType infS;
+  typedef Dune::CommunicationInterface<ParallelParadigmType> InterfaceType;
+  InterfaceType infS(pp);
   infS.build(riS,ownerFlags,ghostFlags);
 
   // output infS

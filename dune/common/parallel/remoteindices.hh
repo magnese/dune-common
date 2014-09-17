@@ -6,11 +6,12 @@
 
 #include "indexset.hh"
 #include "plocalindex.hh"
+#include "mpiparallelparadigm.hh"
+#include "threadparallelparadigm.hh"
 #include <dune/common/exceptions.hh>
 #include <dune/common/poolallocator.hh>
 #include <dune/common/sllist.hh>
 #include <dune/common/stdstreams.hh>
-#include "mpiparallelparadigm.hh"
 #include <map>
 #include <set>
 #include <utility>
@@ -18,7 +19,8 @@
 #include <algorithm>
 #include <iterator>
 
-namespace Dune {
+namespace Dune
+{
   /** @addtogroup Common_Parallel
    *
    * @{

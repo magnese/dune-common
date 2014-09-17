@@ -65,18 +65,14 @@ namespace Dune
 
     size_t threadID_;
 
-    /** @brief The interface we currently work with. */
-    InterfaceMap interfaces_;
-
     /** @brief The colors of the threads. colors_[i] = color of thread i. */
-    std::vector<int> colors_;
+    std::vector<int>* colorsptr_;
 
     /** @brief Number of different colors present in colors_. */
     unsigned int numcolors_;
 
-    /** @brief Compute the coloring scheme.*/
-    template<class I>
-    void computeColoring(const I& interface);
+    /** @brief The interface we currently work with. */
+    InterfaceMap interfaces_;
 
     /** @brief  Functors to update the values in the target. */
     template<class Data, class GatherScatter,typename IndexedTypeFlag>
@@ -104,78 +100,17 @@ namespace Dune
   template<typename Data, typename I>
   void ThreadCommunicator::build(const I& interface)
   {
-    collcommptr_ = &(interface.remoteIndices().parallelParadigm().collCommunicator());
-    threadID_ = interface.remoteIndices().parallelParadigm().threadID();
+    collcommptr_ = &(interface.parallelParadigm().collCommunicator());
+    threadID_ = interface.parallelParadigm().threadID();
+    colorsptr_ = &(interface.parallelParadigm().colors());
+    numcolors_ = interface.parallelParadigm().numColors();
     interfaces_ = interface.interfaces();
-    computeColoring(interface);
   }
 
   template<typename Data, typename I>
   void ThreadCommunicator::build(const Data& source, const Data& target, const I& interface)
   {
-    collcommptr_ = &(interface.remoteIndices().parallelParadigm().collCommunicator());
-    threadID_ = interface.remoteIndices().parallelParadigm().threadID();
-    interfaces_ = interface.interfaces();
-    computeColoring(interface);
-  }
-
-  template<typename I>
-  void ThreadCommunicator::computeColoring(const I& interface)
-  {
-    typedef typename I::RemoteIndicesType RemoteIndicesType;
-    typedef typename RemoteIndicesType::ParallelParadigm ParallelParadigm;
-    typedef typename ParallelParadigm::CollectiveCommunicationType CollectiveCommunicationType;
-
-    RemoteIndicesType& remoteIndices = interface.remoteIndices();
-    ParallelParadigm& parallelParadigm = remoteIndices.parallelParadigm();
-    CollectiveCommunicationType& collComm = parallelParadigm.collCommunicator();
-
-    const size_t numThreads = parallelParadigm.numThreads();
-    const size_t tid = parallelParadigm.threadID();
-
-    colors_.clear();
-    colors_.resize(numThreads, -1);
-    colors_[0] = 0;
-
-    if(numThreads > 1)
-    {
-      // compute adiajency matrix of the graph rappresenting the interaction between threads
-      std::vector<std::vector<int>> adjMatrix(numThreads,std::vector<int>(numThreads,-1));
-      // create buffer to communicate neighbours
-      const std::set<int>* neighboursPtr = &(remoteIndices.getNeighbours());
-      collComm.template createBuffer<const std::set<int>*>();
-      collComm.template setBuffer<const std::set<int>*>(neighboursPtr, tid);
-
-      typedef typename std::set<int>::iterator SetIterType;
-      for(size_t i = 0; i != numThreads; ++i)
-      {
-        const std::set<int>* ptr = (collComm.template getBuffer<const std::set<int>*>())[i];
-        SetIterType itEnd = ptr->end();
-        for(SetIterType it = ptr->begin(); it != itEnd; ++it)
-          adjMatrix[i][*it] = 1;
-      }
-      collComm.template deleteBuffer<const std::set<int>*>();
-
-      // compute colouring with a greedy algorithm
-      for(size_t i = 1; i != numThreads; ++i)
-      {
-        int color = 0;
-        for(size_t j = 0; j != numThreads; ++j)
-        {
-          if(adjMatrix[i][j] == 1)
-          {
-            if(colors_[j] > -1)
-            {
-              color = std::max(color,colors_[j]+1);
-            }
-          }
-        }
-        colors_[i] = color;
-      }
-
-    }
-
-    numcolors_ = *(std::max_element(colors_.begin(),colors_.end()))+1;
+    build<Data,I>(interface);
   }
 
   template<typename Data, typename GatherScatter>
@@ -208,7 +143,7 @@ namespace Dune
     {
       for(int color = 0; color != numcolors_ ; ++color)
       {
-        if(colors_[threadID_] == color)
+        if((*colorsptr_)[threadID_] == color)
         {
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
@@ -227,7 +162,7 @@ namespace Dune
     {
       for(int color = 0; color != numcolors_ ; ++color)
       {
-        if(colors_[threadID_] == color)
+        if((*colorsptr_)[threadID_] == color)
         {
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
@@ -245,7 +180,6 @@ namespace Dune
 
     collcommptr_->template deleteBuffer<BufferType>();
   }
-
 
 }
 

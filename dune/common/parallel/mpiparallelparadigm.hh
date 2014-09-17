@@ -39,7 +39,6 @@ namespace Dune {
   /** @brief MPIParadigm. */
   class MPIParadigm
   {
-
   public:
     /** @brief The type of the communicator. */
     typedef MPI_Comm CommType;
