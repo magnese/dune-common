@@ -47,15 +47,15 @@ namespace Dune
   template<class T>
   class DatatypeCommunicator : public InterfaceBuilder
   {
-  public:
+    public:
+    /** @brief Type of the index set. */
+    typedef T ParallelIndexSet;
+
     /** @brief Type of the underlying remote indices class. */
-    typedef T RemoteIndices;
+    typedef Dune::RemoteIndices<ParallelIndexSet> RemoteIndices;
 
     /** @brief The type of the parallel paradigm we use, e.g. MPIParadigm. */
     typedef typename RemoteIndices::ParallelParadigm ParallelParadigm;
-
-    /** @brief Type of the index set. */
-    typedef typename RemoteIndices::ParallelIndexSet ParallelIndexSet;
 
     /** @brief The type of the global index. */
     typedef typename RemoteIndices::GlobalIndex GlobalIndex;

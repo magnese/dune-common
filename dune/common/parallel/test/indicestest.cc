@@ -184,7 +184,7 @@ void testIndices(MPI_Comm comm)
   accuIndices.rebuild<true>();
   overlapIndices.rebuild<false>();
 
-  Dune::DatatypeCommunicator<RemoteIndices> accumulator, overlapExchanger;
+  Dune::DatatypeCommunicator<ParallelIndexSet> accumulator, overlapExchanger;
 
   Dune::EnumItem<GridFlags,owner> sourceFlags;
   Dune::Combine<Dune::EnumItem<GridFlags,overlap>,Dune::EnumItem<GridFlags,owner>,GridFlags> destFlags;
@@ -491,7 +491,7 @@ void testRedistributeIndices(MPI_Comm comm)
   redistributeIndices.rebuild<true>();
   overlapIndices.rebuild<false>();
 
-  Dune::DatatypeCommunicator<RemoteIndices> redistribute, overlapComm;
+  Dune::DatatypeCommunicator<ParallelIndexSet> redistribute, overlapComm;
   EnumItem<GridFlags,owner> fowner;
   EnumItem<GridFlags,overlap> foverlap;
 
