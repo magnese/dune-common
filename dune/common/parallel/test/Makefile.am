@@ -4,9 +4,9 @@ MPITESTS = indicestest                        \
            indexsettest                       \
            syncertest                         \
            selectiontest                      \
-           variablesizecommunicatortest				\
-	         mpitest				  									\
-	         threadtest
+           variablesizecommunicatortest       \
+           mpitest                            \
+           threadtest
 
 # which tests where program to build and run are equal
 NORMALTESTS =
