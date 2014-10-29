@@ -32,12 +32,12 @@ namespace Dune
   /** @brief ThreadCollectiveCommunication allows communication between threads using shared memeory. */
   class ThreadCollectiveCommunication
   {
-  public:
+    public:
     /** @brief Default constructor. */
-    inline ThreadCollectiveCommunication(const size_t& numThreads);
+    inline ThreadCollectiveCommunication(const std::size_t& numThreads);
 
     /** @brief Get the number of threads. */
-    inline const size_t& size() const;
+    inline const std::size_t& size() const;
 
     /** @brief Barrier to syncronise threads. */
     inline void barrier();
@@ -48,7 +48,7 @@ namespace Dune
 
     /** @brief Set a value into the buffer. */
     template<class T>
-    inline void setBuffer(const T& value, const size_t& tid);
+    inline void setBuffer(const T& value, const std::size_t& tid);
 
     /** @brief Get buffer. */
     template<class T>
@@ -62,9 +62,9 @@ namespace Dune
     inline ~ThreadCollectiveCommunication()
     {}
 
-  private:
+    private:
     /** @brief Number of threads. */
-    size_t size_;
+    std::size_t size_;
 
     /** @brief Flag used by std::call_once function. */
     std::once_flag bufferflag_;
@@ -76,13 +76,28 @@ namespace Dune
     std::mutex mtx_;
 
     /** @brief Counter used for the barrier. */
-    size_t count_;
+    std::size_t count_;
 
     /** @brief Second counter used for the barrier. */
-    size_t seccount_;
+    std::size_t seccount_;
 
     /** @brief Condition variable used for the barrier. */
     std::condition_variable condvar_;
+
+    class CompareFunctor
+    {
+      public:
+      inline CompareFunctor(std::size_t& count1, const std::size_t& count2) :
+        count1_(count1), count2_(count2)
+      {}
+      inline bool operator()()
+      {
+        return count1_ != count2_;
+      }
+      private:
+      std::size_t& count1_;
+      const std::size_t& count2_;
+    };
 
     /** @brief Allocate the buffer. */
     template<class T>
@@ -96,9 +111,9 @@ namespace Dune
   /** @brief The communicator for thread. */
   class ThreadCommunicator
   {
-  public:
+    public:
     /** @brief Constructor. */
-    inline ThreadCommunicator(const size_t& numThreads);
+    inline ThreadCommunicator(const std::size_t& numThreads);
 
     /** @brief Return a constant reference to the ThreadCollectiveCommunication used. */
     inline ThreadCollectiveCommunication& collCommunicator() const;
@@ -107,7 +122,7 @@ namespace Dune
     inline ~ThreadCommunicator()
     {}
 
-  private:
+    private:
     /** @brief The ThreadCollectiveCommunication used. */
     std::shared_ptr<ThreadCollectiveCommunication> collcommptr_;
   };
@@ -115,7 +130,7 @@ namespace Dune
   /** @brief ThreadParadigm. */
   class ThreadParadigm
   {
-  public:
+    public:
     /** @brief The type of the collective communication. */
     typedef ThreadCollectiveCommunication CollectiveCommunicationType;
 
@@ -123,19 +138,16 @@ namespace Dune
     typedef ThreadCommunicator CommType;
 
     /** @brief Constructor. */
-    inline ThreadParadigm(const CommType& comm, const size_t& tid);
+    inline ThreadParadigm(const CommType& comm, const std::size_t& tid);
 
     /** @brief Copy is forbidden. */
     ThreadParadigm(const ThreadParadigm&) = delete;
 
-    /** @brief Null communicator. */
-    //constexpr static CommType nullComm = CommType();
-
     /** @brief Get the thread ID. */
-    inline size_t threadID() const;
+    inline std::size_t threadID() const;
 
     /** @brief Get the number of threads. */
-    inline size_t numThreads() const;
+    inline std::size_t numThreads() const;
 
     /** @brief Get the collective communicator. */
     inline CollectiveCommunicationType& collCommunicator() const;
@@ -166,7 +178,7 @@ namespace Dune
     inline ~ThreadParadigm()
     {}
 
-  private:
+    private:
     /** @brief The communicator. */
     CommType comm_;
 
@@ -174,10 +186,10 @@ namespace Dune
     CollectiveCommunicationType& collcomm_;
 
     /** @brief The thread ID. */
-    size_t tid_;
+    std::size_t tid_;
 
     /** @brief Number of threads. */
-    size_t size_;
+    std::size_t size_;
 
     /** @brief The colors of the threads. colors_[i] = color of thread i. */
     std::vector<int> colors_;
@@ -192,11 +204,11 @@ namespace Dune
 
   /** @} */
 
-  inline ThreadCollectiveCommunication::ThreadCollectiveCommunication(const size_t& numThreads) :
+  inline ThreadCollectiveCommunication::ThreadCollectiveCommunication(const std::size_t& numThreads) :
     size_(numThreads), bufferptr_(nullptr), mtx_(), count_(0), seccount_(0), condvar_()
   {}
 
-  inline const size_t& ThreadCollectiveCommunication::size() const
+  inline const std::size_t& ThreadCollectiveCommunication::size() const
   {
     return size_;
   }
@@ -204,12 +216,14 @@ namespace Dune
   inline void ThreadCollectiveCommunication::barrier()
   {
     std::unique_lock<std::mutex> lock(mtx_);
-    const size_t oldSecCount = seccount_;
+    const std::size_t oldSecCount = seccount_;
     ++count_;
     if(count_ != size_)
     {
-      // wait condition must not depend on wait_count
-      condvar_.wait(lock, [this, oldSecCount]() {return seccount_ != oldSecCount;});
+      // wait condition must not depend on count_
+      //condvar_.wait(lock, [this, oldSecCount]() {return seccount_ != oldSecCount;});
+      CompareFunctor testCondition(seccount_,oldSecCount);
+      condvar_.wait(lock, testCondition);
     }
     else
     {
@@ -233,7 +247,7 @@ namespace Dune
   }
 
   template<typename T>
-  inline void ThreadCollectiveCommunication::setBuffer(const T& value, const size_t& tid)
+  inline void ThreadCollectiveCommunication::setBuffer(const T& value, const std::size_t& tid)
   {
     barrier(); // checkpoint: the buffer is allocated
     (*(static_cast<std::vector<T>*>(bufferptr_)))[tid] = value;
@@ -261,7 +275,7 @@ namespace Dune
     barrier(); // checkpoint: the buffer is free
   }
 
-  inline ThreadCommunicator::ThreadCommunicator(const size_t& numThreads) : collcommptr_(new ThreadCollectiveCommunication(numThreads))
+  inline ThreadCommunicator::ThreadCommunicator(const std::size_t& numThreads) : collcommptr_(new ThreadCollectiveCommunication(numThreads))
   {}
 
   inline ThreadCollectiveCommunication& ThreadCommunicator::collCommunicator() const
@@ -269,16 +283,16 @@ namespace Dune
     return *collcommptr_;
   }
 
-  inline ThreadParadigm::ThreadParadigm(const CommType& comm, const size_t& tid) :
+  inline ThreadParadigm::ThreadParadigm(const CommType& comm, const std::size_t& tid) :
     comm_(comm), collcomm_(comm.collCommunicator()), tid_(tid), size_(collcomm_.size()), colors_(0), numcolors_(0)
   {}
 
-  inline size_t ThreadParadigm::threadID() const
+  inline std::size_t ThreadParadigm::threadID() const
   {
     return tid_;
   }
 
-  inline size_t ThreadParadigm::numThreads() const
+  inline std::size_t ThreadParadigm::numThreads() const
   {
     return size_;
   }
@@ -345,7 +359,7 @@ namespace Dune
 
     if(neighbourIds.empty())
     {
-      for(size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
+      for(std::size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
@@ -364,7 +378,7 @@ namespace Dune
     }
     else
     {
-      for(size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
+      for(std::size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
@@ -402,7 +416,7 @@ namespace Dune
       collcomm_.setBuffer<const std::set<int>*>(&neighbours, tid_);
 
       typedef std::set<int>::iterator SetIterType;
-      for(size_t i = 0; i != size_; ++i)
+      for(std::size_t i = 0; i != size_; ++i)
       {
         const std::set<int>* ptr = (collcomm_.getBuffer<const std::set<int>*>())[i];
         SetIterType itEnd = ptr->end();
@@ -412,10 +426,10 @@ namespace Dune
       collcomm_.deleteBuffer<const std::set<int>*>();
 
       // compute colouring with a greedy algorithm
-      for(size_t i = 1; i != size_; ++i)
+      for(std::size_t i = 1; i != size_; ++i)
       {
         int color = 0;
-        for(size_t j = 0; j != size_; ++j)
+        for(std::size_t j = 0; j != size_; ++j)
         {
           if(adjMatrix[i][j] == 1)
           {
