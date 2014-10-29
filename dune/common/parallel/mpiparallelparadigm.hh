@@ -6,6 +6,7 @@
 
 #include "indexset.hh"
 #include "plocalindex.hh"
+#include <dune/common/std/constexpr.hh>
 #include <dune/common/stdstreams.hh>
 #include <map>
 #include <set>
@@ -47,7 +48,7 @@ namespace Dune {
     inline MPIParadigm(const CommType& comm);
 
     /** @brief Null communicator. */
-    constexpr static CommType nullComm = CommType(MPI_COMM_NULL);
+    DUNE_CONSTEXPR static CommType nullComm = CommType(MPI_COMM_NULL);
 
     /** @brief Default constructor. */
     MPIParadigm()
@@ -543,7 +544,7 @@ namespace Dune
 struct MPIParadigm
 {
   typedef No_Comm CommType;
-  constexpr static CommType nullComm = CommType();
+  DUNE_CONSTEXPR static CommType nullComm = CommType();
 };
 }
 #endif
