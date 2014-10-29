@@ -283,12 +283,12 @@ namespace Dune
     return size_;
   }
 
-  inline typename ThreadParadigm::CollectiveCommunicationType& ThreadParadigm::collCommunicator() const
+  inline ThreadParadigm::CollectiveCommunicationType& ThreadParadigm::collCommunicator() const
   {
     return collcomm_;
   }
 
-  inline typename ThreadParadigm::CommType ThreadParadigm::communicator()
+  inline ThreadParadigm::CommType ThreadParadigm::communicator()
   {
     return comm_;
   }
@@ -401,7 +401,7 @@ namespace Dune
       collcomm_.createBuffer<const std::set<int>*>();
       collcomm_.setBuffer<const std::set<int>*>(&neighbours, tid_);
 
-      typedef typename std::set<int>::iterator SetIterType;
+      typedef std::set<int>::iterator SetIterType;
       for(size_t i = 0; i != size_; ++i)
       {
         const std::set<int>* ptr = (collcomm_.getBuffer<const std::set<int>*>())[i];
