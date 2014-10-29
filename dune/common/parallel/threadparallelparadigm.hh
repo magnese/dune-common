@@ -398,18 +398,18 @@ namespace Dune
       // compute adiajency matrix of the graph rappresenting the interaction between threads
       std::vector<std::vector<int>> adjMatrix(size_,std::vector<int>(size_,-1));
       // create buffer to communicate neighbours
-      collcomm_.template createBuffer<const std::set<int>*>();
-      collcomm_.template setBuffer<const std::set<int>*>(&neighbours, tid_);
+      collcomm_.createBuffer<const std::set<int>*>();
+      collcomm_.setBuffer<const std::set<int>*>(&neighbours, tid_);
 
       typedef typename std::set<int>::iterator SetIterType;
       for(size_t i = 0; i != size_; ++i)
       {
-        const std::set<int>* ptr = (collcomm_.template getBuffer<const std::set<int>*>())[i];
+        const std::set<int>* ptr = (collcomm_.getBuffer<const std::set<int>*>())[i];
         SetIterType itEnd = ptr->end();
         for(SetIterType it = ptr->begin(); it != itEnd; ++it)
           adjMatrix[i][*it] = 1;
       }
-      collcomm_.template deleteBuffer<const std::set<int>*>();
+      collcomm_.deleteBuffer<const std::set<int>*>();
 
       // compute colouring with a greedy algorithm
       for(size_t i = 1; i != size_; ++i)
