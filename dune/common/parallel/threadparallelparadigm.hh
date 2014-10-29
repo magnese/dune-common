@@ -350,8 +350,8 @@ namespace Dune
 
     // create buffer to communicate indices
     typedef std::pair<const ParallelIndexSet*,const ParallelIndexSet*> IndicesPairType;
-    collcomm_.template createBuffer<IndicesPairType>();
-    collcomm_.template setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
+    collcomm_.createBuffer<IndicesPairType>();
+    collcomm_.setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
     // indices list for sending and receive
     RemoteIndexList* send(nullptr);
@@ -363,12 +363,12 @@ namespace Dune
       {
         if(includeSelf || ((!includeSelf)&&(remoteProc!=tid_)))
         {
-          send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+          send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].second);
 
           if(!(send->empty()))
             neighbourIds.insert(remoteProc);
           if(differentTarget && (!(send->empty())))
-            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
           else
             receive=send;
 
@@ -384,9 +384,9 @@ namespace Dune
         {
           if(neighbourIds.find(remoteProc)!=neighbourIds.end())
           {
-            send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].second);
+            send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].second);
             if(differentTarget)
-              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.template getBuffer<IndicesPairType>())[remoteProc].first);
+              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
             else
               receive=send;
 
@@ -397,7 +397,7 @@ namespace Dune
 
     }
 
-    collcomm_.template deleteBuffer<IndicesPairType>();
+    collcomm_.deleteBuffer<IndicesPairType>();
 
   }
 

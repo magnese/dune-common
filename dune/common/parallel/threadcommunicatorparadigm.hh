@@ -34,7 +34,7 @@ namespace Dune
   /** @brief Thread communicator which uses a coloring algorithm to send and receive data. */
   class ThreadCommunicatorParadigm
   {
-  public:
+    public:
     /** @brief Constructor. */
     ThreadCommunicatorParadigm()
     {}
@@ -63,7 +63,7 @@ namespace Dune
     ~ThreadCommunicatorParadigm()
     {}
 
-  private:
+    private:
     /** @brief The type of the map that maps interface information to processors. */
     typedef std::map<int,std::pair<InterfaceInformation,InterfaceInformation> > InterfaceMap;
 
@@ -71,7 +71,7 @@ namespace Dune
     ThreadCollectiveCommunication* collcommptr_;
 
     /** @brief The thread ID. */
-    size_t threadID_;
+    std::size_t threadID_;
 
     /** @brief The colors of the threads. colors_[i] = color of thread i. */
     std::vector<int>* colorsptr_;
@@ -91,14 +91,14 @@ namespace Dune
     template<class Data, class GatherScatter>
     struct Updater<Data,GatherScatter,SizeOne>
     {
-      inline void operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target);
+      inline void operator()(const std::size_t& idxSource, const Data& source, const std::size_t& idxTarget, Data& target);
     };
 
     /** @brief Functor specialization for VariableSize. */
     template<class Data, class GatherScatter>
     struct Updater<Data,GatherScatter,VariableSize>
     {
-      inline void operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target);
+      inline void operator()(const std::size_t& idxSource, const Data& source, const std::size_t& idxTarget, Data& target);
     };
 
   };
@@ -123,15 +123,17 @@ namespace Dune
   }
 
   template<typename Data, typename GatherScatter>
-  inline void ThreadCommunicatorParadigm::Updater<Data,GatherScatter,SizeOne>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  inline void ThreadCommunicatorParadigm::Updater<Data,GatherScatter,SizeOne>::operator()(
+      const std::size_t& idxSource, const Data& source, const std::size_t& idxTarget, Data& target)
   {
     GatherScatter::scatter(target,GatherScatter::gather(source,idxSource),idxTarget);
   }
 
   template<typename Data, typename GatherScatter>
-  inline void ThreadCommunicatorParadigm::Updater<Data,GatherScatter,VariableSize>::operator()(const size_t& idxSource, const Data& source, const size_t& idxTarget, Data& target)
+  inline void ThreadCommunicatorParadigm::Updater<Data,GatherScatter,VariableSize>::operator()(
+      const std::size_t& idxSource, const Data& source, const std::size_t& idxTarget, Data& target)
   {
-    for(size_t j = 0; j != CommPolicy<Data>::getSize(source,idxSource); ++j)
+    for(std::size_t j = 0; j != CommPolicy<Data>::getSize(source,idxSource); ++j)
       GatherScatter::scatter(target,GatherScatter::gather(source,idxSource,j),idxTarget,j);
   }
 
@@ -147,8 +149,8 @@ namespace Dune
 
     // create the buffer to communicate data
     typedef std::pair<Data*,const InterfaceMap*> BufferType;
-    collComm.template createBuffer<BufferType>();
-    collComm.template setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
+    collComm.createBuffer<BufferType>();
+    collComm.setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
 
     if(FORWARD)
     {
@@ -159,10 +161,10 @@ namespace Dune
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
-            size_t size = it->second.first.size();
-            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest =  (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
-            for(size_t i=0; i < size; i++)
+            std::size_t size = it->second.first.size();
+            Data& dest = *(((collComm.getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest =  (((collComm.getBuffer<BufferType>())[it->first]).second)->find(threadID_);
+            for(std::size_t i=0; i < size; i++)
               updater(it->second.first[i],source,itDest->second.second[i],dest);
           }
         }
@@ -178,10 +180,10 @@ namespace Dune
           const_iterator itEnd = interfaces_.end();
           for(const_iterator it = interfaces_.begin(); it != itEnd; ++it)
           {
-            size_t size = it->second.second.size();
-            Data& dest = *(((collComm.template getBuffer<BufferType>())[it->first]).first);
-            const_iterator itDest = (((collComm.template getBuffer<BufferType>())[it->first]).second)->find(threadID_);
-            for(size_t i=0; i < size; i++)
+            std::size_t size = it->second.second.size();
+            Data& dest = *(((collComm.getBuffer<BufferType>())[it->first]).first);
+            const_iterator itDest = (((collComm.getBuffer<BufferType>())[it->first]).second)->find(threadID_);
+            for(std::size_t i=0; i < size; i++)
               updater(it->second.second[i],source,itDest->second.first[i],dest);
           }
         }
@@ -189,7 +191,7 @@ namespace Dune
       }
     }
 
-    collComm.template deleteBuffer<BufferType>();
+    collComm.deleteBuffer<BufferType>();
   }
 
 }
