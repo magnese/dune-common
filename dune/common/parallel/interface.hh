@@ -278,9 +278,11 @@ namespace Dune
     /** @brief The parallel paradigm we use. */
     ParallelParadigm* parallelptr_;
 
+  protected:
     /** @brief The communicator we use. */
     CommType communicator_;
 
+  private:
     /**
      * @brief Information about the interfaces.
      *
