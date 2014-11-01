@@ -77,7 +77,7 @@ namespace Dune
     std::vector<int>* colorsptr_;
 
     /** @brief Number of different colors present in colors_. */
-    unsigned int numcolors_;
+    int numcolors_;
 
     /** @brief The interface we currently work with. */
     InterfaceMap interfaces_;

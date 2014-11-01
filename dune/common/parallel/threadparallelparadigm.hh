@@ -172,7 +172,7 @@ namespace Dune
     inline std::vector<int>& colors();
 
     /** @brief The number of different colors. */
-    inline unsigned int& numColors();
+    inline int& numColors();
 
     /** @brief Destructor. */
     inline ~ThreadParadigm()
@@ -195,7 +195,7 @@ namespace Dune
     std::vector<int> colors_;
 
     /** @brief Number of different colors present in colors_. */
-    unsigned int numcolors_;
+    int numcolors_;
 
     /** @brief Given a source and a target, it creates the corresponding RemoteIndexList. */
     template<bool ignorePublic,class ParallelIndexSet,class RemoteIndexList>
@@ -452,7 +452,7 @@ namespace Dune
     return colors_;
   }
 
-  inline unsigned int& ThreadParadigm::numColors()
+  inline int& ThreadParadigm::numColors()
   {
     return numcolors_;
   }
