@@ -189,10 +189,10 @@ namespace Dune
     typedef typename A::template rebind<RemoteIndex>::other Allocator;
 
     /** @brief The type of the remote index list. */
-    typedef SLList<RemoteIndex,Allocator>  RemoteIndexList;
+    typedef SLList<RemoteIndex,Allocator> RemoteIndexList;
 
     /** @brief The type of the map from rank to remote index list. */
-    typedef std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> >  RemoteIndexMap;
+    typedef std::map<int, std::pair<RemoteIndexList*,RemoteIndexList*> > RemoteIndexMap;
 
     typedef typename RemoteIndexMap::const_iterator const_iterator;
 

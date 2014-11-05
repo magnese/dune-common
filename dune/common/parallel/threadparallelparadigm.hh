@@ -368,9 +368,9 @@ namespace Dune
           if(!(send->empty()))
             neighbourIds.insert(remoteProc);
           if(differentTarget && (!(send->empty())))
-            receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
+            receive = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
           else
-            receive=send;
+            receive = send;
 
           remoteIndices.insert(std::make_pair(remoteProc, std::make_pair(send,receive)));
         }
@@ -386,9 +386,9 @@ namespace Dune
           {
             send = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(source,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].second);
             if(differentTarget)
-              receive  = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
+              receive = createRemoteIndexList<ignorePublic,ParallelIndexSet,RemoteIndexList>(target,(collcomm_.getBuffer<IndicesPairType>())[remoteProc].first);
             else
-              receive=send;
+              receive = send;
 
             remoteIndices.insert(std::make_pair(remoteProc, std::make_pair(send,receive)));
           }
