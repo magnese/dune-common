@@ -44,7 +44,7 @@ namespace Dune
 
     /** @brief Create buffer to share data among threads. */
     template<class T>
-    inline void createBuffer();
+    inline void createBuffer(const std::size_t& tid);
 
     /** @brief Set a value into the buffer. */
     template<class T>
@@ -56,7 +56,7 @@ namespace Dune
 
     /** @brief Delete buffer. */
     template<class T>
-    inline void deleteBuffer();
+    inline void deleteBuffer(const std::size_t& tid);
 
     /** @brief Destructor. */
     inline ~ThreadCollectiveCommunication()
@@ -65,9 +65,6 @@ namespace Dune
     private:
     /** @brief Number of threads. */
     std::size_t size_;
-
-    /** @brief Flag used by std::call_once function. */
-    std::once_flag bufferflag_;
 
     /** @brief Pointer to the buffer. */
     void* bufferptr_;
@@ -98,14 +95,6 @@ namespace Dune
       std::size_t& count1_;
       const std::size_t& count2_;
     };
-
-    /** @brief Allocate the buffer. */
-    template<class T>
-    inline void createBuffer_();
-
-    /** @brief Deallocate the buffer. */
-    template<class T>
-    inline void deleteBuffer_();
   };
 
   /** @brief The communicator for thread. */
@@ -235,15 +224,10 @@ namespace Dune
   }
 
   template<typename T>
-  inline void ThreadCollectiveCommunication::createBuffer_()
+  inline void ThreadCollectiveCommunication::createBuffer(const std::size_t& tid)
   {
-    bufferptr_ = new std::vector<T>(size_);
-  }
-
-  template<typename T>
-  inline void ThreadCollectiveCommunication::createBuffer()
-  {
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication::createBuffer_<T>,this);
+    if(tid==0)
+      bufferptr_ = new std::vector<T>(size_);
   }
 
   template<typename T>
@@ -251,7 +235,7 @@ namespace Dune
   {
     barrier(); // checkpoint: the buffer is allocated
     (*(static_cast<std::vector<T>*>(bufferptr_)))[tid] = value;
-    barrier(); // checkpoitn: the buffer is set
+    barrier(); // checkpoint: the buffer is set
   }
 
   template<typename T>
@@ -261,17 +245,14 @@ namespace Dune
   }
 
   template<typename T>
-  inline void ThreadCollectiveCommunication::deleteBuffer_()
-  {
-    delete static_cast<std::vector<T>*>(bufferptr_);
-    bufferptr_ = nullptr;
-  }
-
-  template<typename T>
-  inline void ThreadCollectiveCommunication::deleteBuffer()
+  inline void ThreadCollectiveCommunication::deleteBuffer(const std::size_t& tid)
   {
     barrier(); // checkpoint: the buffer isn't needed anymore
-    std::call_once(bufferflag_,&ThreadCollectiveCommunication::deleteBuffer_<T>,this);
+    if(tid==0)
+    {
+      delete static_cast<std::vector<T>*>(bufferptr_);
+      bufferptr_ = nullptr;
+    }
     barrier(); // checkpoint: the buffer is free
   }
 
@@ -350,13 +331,13 @@ namespace Dune
 
     // create buffer to communicate indices
     typedef std::pair<const ParallelIndexSet*,const ParallelIndexSet*> IndicesPairType;
-    collcomm_.createBuffer<IndicesPairType>();
+    collcomm_.createBuffer<IndicesPairType>(tid_);
+
     collcomm_.setBuffer<IndicesPairType>(IndicesPairType(source,target), tid_);
 
     // indices list for sending and receive
     RemoteIndexList* send(nullptr);
     RemoteIndexList* receive(nullptr);
-
     if(neighbourIds.empty())
     {
       for(std::size_t remoteProc = 0; remoteProc != size_; ++remoteProc)
@@ -397,7 +378,7 @@ namespace Dune
 
     }
 
-    collcomm_.deleteBuffer<IndicesPairType>();
+    collcomm_.deleteBuffer<IndicesPairType>(tid_);
 
   }
 
@@ -412,7 +393,7 @@ namespace Dune
       // compute adiajency matrix of the graph rappresenting the interaction between threads
       std::vector<std::vector<int>> adjMatrix(size_,std::vector<int>(size_,-1));
       // create buffer to communicate neighbours
-      collcomm_.createBuffer<const std::set<int>*>();
+      collcomm_.createBuffer<const std::set<int>*>(tid_);
       collcomm_.setBuffer<const std::set<int>*>(&neighbours, tid_);
 
       typedef std::set<int>::iterator SetIterType;
@@ -423,7 +404,7 @@ namespace Dune
         for(SetIterType it = ptr->begin(); it != itEnd; ++it)
           adjMatrix[i][*it] = 1;
       }
-      collcomm_.deleteBuffer<const std::set<int>*>();
+      collcomm_.deleteBuffer<const std::set<int>*>(tid_);
 
       // compute colouring with a greedy algorithm
       for(std::size_t i = 1; i != size_; ++i)

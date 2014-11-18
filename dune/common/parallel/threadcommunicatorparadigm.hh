@@ -149,7 +149,7 @@ namespace Dune
 
     // create the buffer to communicate data
     typedef std::pair<Data*,const InterfaceMap*> BufferType;
-    collComm.createBuffer<BufferType>();
+    collComm.createBuffer<BufferType>(threadID_);
     collComm.setBuffer<BufferType>(BufferType(&target,&interfaces_), threadID_);
 
     if(FORWARD)
@@ -191,7 +191,7 @@ namespace Dune
       }
     }
 
-    collComm.deleteBuffer<BufferType>();
+    collComm.deleteBuffer<BufferType>(threadID_);
   }
 
 }
