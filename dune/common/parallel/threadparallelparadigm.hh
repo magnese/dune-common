@@ -307,10 +307,7 @@ namespace Dune
         if(itS->global() == itT->global())
         {
           if(itS->local().isPublic() || ignorePublic)
-          {
-            const RemoteIndex* remoteIdxPtr = new RemoteIndex(itT->local().attribute(), &(*itS));
-            remoteIndexList->push_back(*remoteIdxPtr);
-          }
+            remoteIndexList->push_back(RemoteIndex(itT->local().attribute(), &(*itS)));
         }
 
       }
