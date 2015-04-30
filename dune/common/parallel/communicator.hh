@@ -1,6 +1,5 @@
 // -*- tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 // vi: set et ts=4 sw=2 sts=2:
-// $Id$
 #ifndef DUNE_COMMUNICATOR
 #define DUNE_COMMUNICATOR
 
@@ -419,7 +418,7 @@ namespace Dune
       void add(int proc, int local)
       {
         IndexedTypeInformation& info=information_[proc];
-        assert(info.elements<info.size);
+        assert((info.elements)<info.size);
         MPI_Address( const_cast<void*>(CommPolicy<V>::getAddress(data_, local)),
                      info.displ+info.elements);
         info.length[info.elements]=CommPolicy<V>::getSize(data_, local);
@@ -1434,15 +1433,23 @@ namespace Dune
       if(FORWARD) {
         assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": receiving "<<info->second.second.size_<<" from "<<info->first<<std::endl;
-        MPI_Irecv(recvBuffer+info->second.second.start_, info->second.second.size_,
-                  MPI_BYTE, info->first, commTag_, communicator_,
-                  recvRequests+i);
+        if(info->second.second.size_)
+          MPI_Irecv(recvBuffer+info->second.second.start_, info->second.second.size_,
+                    MPI_BYTE, info->first, commTag_, communicator_,
+                    recvRequests+i);
+        else
+          // Nothing to receive -> set request to inactive
+          recvRequests[i]=MPI_REQUEST_NULL;
       }else{
         assert(info->second.first.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.first.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": receiving "<<info->second.first.size_<<" to "<<info->first<<std::endl;
-        MPI_Irecv(recvBuffer+info->second.first.start_, info->second.first.size_,
-                  MPI_BYTE, info->first, commTag_, communicator_,
-                  recvRequests+i);
+        if(info->second.first.size_)
+          MPI_Irecv(recvBuffer+info->second.first.start_, info->second.first.size_,
+                    MPI_BYTE, info->first, commTag_, communicator_,
+                    recvRequests+i);
+        else
+          // Nothing to receive -> set request to inactive
+          recvRequests[i]=MPI_REQUEST_NULL;
       }
     }
 
@@ -1453,15 +1460,23 @@ namespace Dune
         assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= recvBufferSize );
         Dune::dvverb<<rank<<": sending "<<info->second.first.size_<<" to "<<info->first<<std::endl;
         assert(info->second.first.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.first.size_ <= sendBufferSize );
-        MPI_Issend(sendBuffer+info->second.first.start_, info->second.first.size_,
-                   MPI_BYTE, info->first, commTag_, communicator_,
-                   sendRequests+i);
+        if(info->second.first.size_)
+          MPI_Issend(sendBuffer+info->second.first.start_, info->second.first.size_,
+                     MPI_BYTE, info->first, commTag_, communicator_,
+                     sendRequests+i);
+        else
+          // Nothing to send -> set request to inactive
+          sendRequests[i]=MPI_REQUEST_NULL;
       }else{
         assert(info->second.second.start_*sizeof(typename CommPolicy<Data>::IndexedType)+info->second.second.size_ <= sendBufferSize );
         Dune::dvverb<<rank<<": sending "<<info->second.second.size_<<" to "<<info->first<<std::endl;
-        MPI_Issend(sendBuffer+info->second.second.start_, info->second.second.size_,
-                   MPI_BYTE, info->first, commTag_, communicator_,
-                   sendRequests+i);
+        if(info->second.second.size_)
+          MPI_Issend(sendBuffer+info->second.second.start_, info->second.second.size_,
+                     MPI_BYTE, info->first, commTag_, communicator_,
+                     sendRequests+i);
+        else
+          // Nothing to send -> set request to inactive
+          sendRequests[i]=MPI_REQUEST_NULL;
       }
 
     // Wait for completion of receive and immediately start scatter

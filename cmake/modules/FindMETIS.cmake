@@ -47,11 +47,15 @@ find_library(METIS_LIBRARY ${METIS_LIB_NAME}
   PATH_SUFFIXES lib
 )
 
+# we need to check whether we need to link m, copy the lazy solution from FindBLAS and FindLAPACK here.
+if(METIS_LIBRARY AND NOT WIN32)
+  list(APPEND METIS_LIBRARY "-lm")
+endif()
+
 # check metis library
 if(METIS_LIBRARY)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES ${METIS_LIBRARIY})
-  set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ${METIS_LIBRARY})
-  include(CheckSymbolExists)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${METIS_LIBRARY})
+  include(CheckFunctionExists)
   check_function_exists(METIS_PartGraphKway HAVE_METIS_PARTGRAPHKWAY)
 endif(METIS_LIBRARY)
 
@@ -87,9 +91,8 @@ else(METIS_FOUND)
     "Library directory: ${METIS_LIBRARIES}\n\n")
 endif(METIS_FOUND)
 
-#add all metis related flags to ALL_PKG_FLAGS, this must happen regardless of a target using add_dune_metis_flags
+# register all METIS related flags
 if(METIS_FOUND)
-  foreach(dir ${METIS_INCLUDE_DIRS})
-    set_property(GLOBAL APPEND PROPERTY ALL_PKG_FLAGS "-I${dir}")
-  endforeach()
+  dune_register_package_flags(LIBRARIES "${METIS_LIBRARIES}"
+                              INCLUDE_DIRS "${METIS_INCLUDE_DIRS}")
 endif()
