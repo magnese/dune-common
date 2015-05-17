@@ -1,4 +1,4 @@
-set(MPITESTPROGS indicestest indexsettest paralleltest syncertest selectiontest variablesizecommunicatortest)
+set(MPITESTPROGS indicestest indexsettest paralleltest syncertest selectiontest threadstest variablesizecommunicatortest)
 
 add_directory_test_target(_test_target)
 # We do not want want to build the tests during make all,
@@ -7,6 +7,9 @@ add_dependencies(${_test_target} ${MPITESTPROGS})
 
 add_executable("indexsettest" indexsettest.cc)
 target_link_libraries("indexsettest" "dunecommon" ${CMAKE_THREAD_LIBS_INIT} ${})
+
+add_executable("threadstest" threadstest.cc)
+target_link_libraries("threadstest" "dunecommon")
 
 include(DuneMPI)
 add_executable("indicestest" indicestest.cc)
@@ -34,6 +37,7 @@ add_test(selectiontest selectiontest)
 add_test(indicestest indicestest)
 add_test(paralleltest paralleltest)
 add_test(syncertest syncertest)
+add_test(threadstest threadstest)
 add_test(variablesizecommunicatortest variablesizecommunicatortest)
 
 # treat tests returning code 77 as skipped
@@ -41,5 +45,6 @@ set_tests_properties(
   indicestest
   paralleltest
   syncertest
+  threadstest
   variablesizecommunicatortest
   PROPERTIES SKIP_RETURN_CODE 77)

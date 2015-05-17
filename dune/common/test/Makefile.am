@@ -42,9 +42,7 @@ TESTPROGS = \
     tuplestest_std \
     tupleutilitytest \
     typetraitstest \
-    utilitytest \
-    threadstest \
-    threadstestcolor
+    utilitytest
 
 # which tests to run
 COMPILE_XFAIL=$(DUNE_COMMON_BIN)/xfail-compile-tests
@@ -197,16 +195,6 @@ testdebugallocator_fail5_SOURCES = testdebugallocator.cc
 testdebugallocator_fail5_CPPFLAGS = $(AM_CPPFLAGS) -DFAILURE5
 
 testfloatcmp_SOURCES = testfloatcmp.cc
-
-threadstest_SOURCES = threadstest.cc
-threadstest_CPPFLAGS = $(AM_CPPFLAGS)
-threadstest_LDADD = $(LDADD)
-threadstest_LDFLAGS = $(AM_LDFLAGS) -lpthread
-
-threadstestcolor_SOURCES = threadstestcolor.cc
-threadstestcolor_CPPFLAGS = $(AM_CPPFLAGS)
-threadstestcolor_LDADD = $(LDADD)
-threadstestcolor_LDFLAGS = $(AM_LDFLAGS) -lpthread
 
 tuplestest_std_SOURCES = tuplestest.cc
 
