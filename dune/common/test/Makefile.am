@@ -207,6 +207,8 @@ typetraitstest_SOURCES = typetraitstest.cc
 
 utilitytest_SOURCES = utilitytest.cc
 
+
+
 include $(top_srcdir)/am/global-rules
 
 EXTRA_DIST = CMakeLists.txt dummy.f
