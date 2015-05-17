@@ -32,6 +32,7 @@ TESTPROGS = \
     shared_ptrtest_config \
     singletontest \
     streamtest \
+    stringutilitytest \
     testdebugallocator \
     testdebugallocator_fail1 \
     testdebugallocator_fail2 \
@@ -39,7 +40,7 @@ TESTPROGS = \
     testdebugallocator_fail4 \
     testdebugallocator_fail5 \
     testfloatcmp \
-    tuplestest_std \
+    tuplestest \
     tupleutilitytest \
     typetraitstest \
     utilitytest
@@ -176,6 +177,8 @@ sourcescheck_NOSOURCES = timing.cc
 
 streamtest_SOURCES = streamtest.cc
 
+stringutilitytest_SOURCES = stringutilitytest.cc
+
 testdebugallocator_SOURCES = testdebugallocator.cc
 testdebugallocator_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -196,7 +199,7 @@ testdebugallocator_fail5_CPPFLAGS = $(AM_CPPFLAGS) -DFAILURE5
 
 testfloatcmp_SOURCES = testfloatcmp.cc
 
-tuplestest_std_SOURCES = tuplestest.cc
+tuplestest_SOURCES = tuplestest.cc
 
 tupleutilitytest_SOURCES = tupleutilitytest.cc
 
