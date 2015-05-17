@@ -2,11 +2,11 @@
 
 MPITESTS = indicestest                      \
            indexsettest                     \
+           paralleltest                     \
+           threadstest                      \
            syncertest                       \
            selectiontest                    \
-           variablesizecommunicatortest		  \
-					 paralleltest				  						\
-					 threadstest
+           variablesizecommunicatortest
 
 # which tests where program to build and run are equal
 NORMALTESTS =
