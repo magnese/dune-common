@@ -1,11 +1,13 @@
 # $Id$
 
 MPITESTS = indicestest                      \
+           femthreadscolortest              \
+           temthreadstest                   \
            indexsettest                     \
            paralleltest                     \
-           threadstest                      \
            syncertest                       \
            selectiontest                    \
+           threadstest                      \
            variablesizecommunicatortest
 
 # which tests where program to build and run are equal
@@ -61,6 +63,16 @@ variablesizecommunicatortest_LDADD =                                   \
 	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)                     \
 	$(DUNEMPILIBS)                                                 \
   $(LDADD)
+
+femthreadscolortest_SOURCES = femthreadscolortest.cc
+femthreadscolortest_CPPFLAGS = $(AM_CPPFLAGS)
+femthreadscolortest_LDADD = $(LDADD)
+femthreadscolortest_LDFLAGS = $(AM_LDFLAGS) -lpthread
+
+femthreadstest_SOURCES = femthreadstest.cc
+femthreadstest_CPPFLAGS = $(AM_CPPFLAGS)
+femthreadstest_LDADD = $(LDADD)
+femthreadstest_LDFLAGS = $(AM_LDFLAGS) -lpthread
 
 paralleltest_SOURCES = paralleltest.cc
 paralleltest_CPPFLAGS = $(AM_CPPFLAGS)        \
