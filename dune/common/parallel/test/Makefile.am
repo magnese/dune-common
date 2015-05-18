@@ -5,8 +5,8 @@ MPITESTS = indicestest                        \
            syncertest                         \
            selectiontest                      \
            variablesizecommunicatortest       \
-           mpitest                            \
-           threadtest
+           mpiremoteindicestest               \
+           threadremoteindicestest
 
 # which tests where program to build and run are equal
 NORMALTESTS =
@@ -64,27 +64,27 @@ variablesizecommunicatortest_LDADD =                    \
   $(LDADD)
 
 
-mpitest_SOURCES = mpitest.cc
-mpitest_CPPFLAGS = $(AM_CPPFLAGS)							\
-  $(DUNEMPICPPFLAGS)													\
+mpiremoteindicestest_SOURCES = mpiremoteindicestest.cc
+mpiremoteindicestest_CPPFLAGS = $(AM_CPPFLAGS)  \
+  $(DUNEMPICPPFLAGS)													  \
   $(DUNE_COMMON_CPPFLAGS)
-mpitest_LDFLAGS = $(AM_LDFLAGS)       	      \
-  $(DUNEMPILDFLAGS)                     	    \
+mpiremoteindicestest_LDFLAGS = $(AM_LDFLAGS)    \
+  $(DUNEMPILDFLAGS)                     	      \
   $(DUNE_COMMON_LDFLAGS)
-mpitest_LDADD =           	                  \
-  $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
-  $(DUNEMPILIBS)                            	\
+mpiremoteindicestest_LDADD = 	                  \
+  $(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	  \
+  $(DUNEMPILIBS)                            	  \
 	$(LDADD)
 
 
-threadtest_SOURCES = threadtest.cc
-threadtest_CPPFLAGS = $(AM_CPPFLAGS)          \
+threadremoteindicestest_SOURCES = threadremoteindicestest.cc
+threadremoteindicestest_CPPFLAGS = $(AM_CPPFLAGS)  \
 	$(DUNE_COMMON_CPPFLAGS)
-threadtest_LDFLAGS = $(AM_LDFLAGS)            \
+threadremoteindicestest_LDFLAGS = $(AM_LDFLAGS)    \
 	$(DUNE_COMMON_LDFLAGS)
-threadtest_LDADD =                            \
-	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	\
-	$(LDADD)																		\
+threadremoteindicestest_LDADD =                    \
+	$(DUNE_COMMON_LDFLAGS) $(DUNE_COMMON_LIBS)	     \
+	$(LDADD)																		     \
 	-lpthread
 
 include $(top_srcdir)/am/global-rules
