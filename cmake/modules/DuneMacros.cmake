@@ -51,7 +51,7 @@
 # Creates shared and static libraries with the same basename.
 # <basename> is the basename of the library.
 # On Unix this creates lib<basename>.so and lib<BASENAME>.a.
-# Libraries that should be incorporate into this libary can
+# Libraries that should be incorporate into this library can
 # be specified with the ADD_LIBS option.
 # The libraries will be built in ${PROJECT_BINARY_DIR}/lib.
 # If the option NO_EXPORT is omitted the library is exported
@@ -79,6 +79,9 @@
 enable_language(C) # Enable C to skip CXX bindings for some tests.
 
 include(FeatureSummary)
+include(DuneEnableAllPackages)
+
+include(DuneSymlinkOrCopy)
 
 # Converts a module name given by _module into an uppercase string
 # _upper where all dashes (-) are replaced by underscores (_)
@@ -94,10 +97,10 @@ macro(find_dune_package module)
   if(DUNE_FIND_REQUIRED)
     set(required REQUIRED)
     set_package_properties(${module} PROPERTIES TYPE REQUIRED)
-  else(DUNE_FIND_REQUIRED)
+  else()
     unset(required)
-    set_package_properties(${module} PROPERTIES TYPE RECOMMENDED)
-  endif(DUNE_FIND_REQUIRED)
+    set_package_properties(${module} PROPERTIES TYPE OPTIONAL)
+  endif()
   if(DUNE_FIND_VERSION MATCHES "(>=|=|<=).*")
     string(REGEX REPLACE "(>=|=|<=)(.*)" "\\1" DUNE_FIND_VERSION_OP ${DUNE_FIND_VERSION})
     string(REGEX REPLACE "(>=|=|<=)(.*)" "\\2" DUNE_FIND_VERSION_NUMBER ${DUNE_FIND_VERSION})
@@ -166,8 +169,10 @@ macro(find_dune_package module)
   if(${module}_FOUND)
     # parse other module's dune.module file to generate variables for config.h
     unset(${module}_dune_module)
-    foreach(_dune_module_file ${${module}_PREFIX}/dune.module
-        ${${module}_PREFIX}/lib/dunecontrol/${module}/dune.module)
+    foreach(_dune_module_file
+        ${${module}_PREFIX}/dune.module
+        ${${module}_PREFIX}/lib/dunecontrol/${module}/dune.module
+        ${${module}_PREFIX}/lib64/dunecontrol/${module}/dune.module)
       if(EXISTS ${_dune_module_file})
         get_filename_component(_dune_module_file_path ${_dune_module_file} PATH)
         dune_module_information(${_dune_module_file_path})# QUIET)
@@ -327,6 +332,12 @@ macro(dune_module_information MODULE_DIR)
   set(${DUNE_MOD_NAME_UPPERCASE}_VERSION_MAJOR    "${DUNE_VERSION_MAJOR}")
   set(${DUNE_MOD_NAME_UPPERCASE}_VERSION_MINOR    "${DUNE_VERSION_MINOR}")
   set(${DUNE_MOD_NAME_UPPERCASE}_VERSION_REVISION "${DUNE_VERSION_REVISION}")
+
+  # configure CPack
+  set(CPACK_PACKAGE_NAME "${DUNE_MOD_NAME}")
+  set(CPACK_PACKAGE_VERSION "${DUNE_VERSION_MAJOR}.${DUNE_VERSION_MINOR}.${DUNE_VERSION_REVISION}")
+  set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
+  set(CPACK_SOURCE_IGNORE_FILES "${CMAKE_BINARY_DIR}" "\\\\.svn" "\\\\.git" ".*/*\\\\.gitignore")
 endmacro(dune_module_information)
 
 macro(dune_process_dependency_leafs modules versions is_required next_level_deps
@@ -517,10 +528,8 @@ macro(dune_process_dependency_macros)
         endforeach(_lib ${${_mod}_LIBRARIES})
       endif(${_mod}_LIBRARIES)
 
-      #update ALL_PKG_FLAGS
-      foreach(dir ${${_mod}_INCLUDE_DIRS})
-        set_property(GLOBAL APPEND PROPERTY ALL_PKG_FLAGS "-I${dir}")
-      endforeach()
+      # register dune module
+      dune_register_package_flags(INCLUDE_DIRS "${${_mod}_INCLUDE_DIRS}")
     endif(NOT ${_mod}_PROCESSED)
   endforeach(_mod DEPENDENCIES)
 endmacro(dune_process_dependency_macros)
@@ -530,6 +539,13 @@ endmacro(dune_process_dependency_macros)
 # depedencies.
 # Don't forget to call finalize_dune_project afterwards.
 macro(dune_project)
+  # check whether a compiler name instead of compiler path is given, this causes serious problems with older cmake versions.
+  # Unfortunately those errors only surface on a second run, when the build directory already exists. The compiler
+  # variable is then (for obscure reasons) expanded to ${CMAKE_BINARY_DIR}/...
+  if((${CMAKE_CXX_COMPILER} MATCHES "${CMAKE_BINARY_DIR}.*") AND (${CMAKE_VERSION} VERSION_LESS "3.0"))
+    message(FATAL_ERROR "You need to specify an absolute path to your compiler instead of just the compiler name. cmake >= 3.0 fixes this issue.")
+  endif()
+
   # extract information from dune.module
   dune_module_information(${CMAKE_SOURCE_DIR})
   set(ProjectName            "${DUNE_MOD_NAME}")
@@ -537,6 +553,7 @@ macro(dune_project)
   set(ProjectVersionString   "${DUNE_VERSION_MAJOR}.${DUNE_VERSION_MINOR}.${DUNE_VERSION_REVISION}")
   set(ProjectVersionMajor    "${DUNE_VERSION_MAJOR}")
   set(ProjectVersionMinor    "${DUNE_VERSION_MINOR}")
+  set(ProjectVersionRevision "${DUNE_VERSION_REVISION}")
   set(ProjectMaintainerEmail "${DUNE_MAINTAINER}")
 
   define_property(GLOBAL PROPERTY DUNE_MODULE_LIBRARIES
@@ -554,6 +571,9 @@ macro(dune_project)
   workaround_9220(Fortran Fortran_Works)
   if(Fortran_Works)
     enable_language(Fortran OPTIONAL)
+    if(NOT CMAKE_Fortran_COMPILER)
+      set(Fortran_Works OFF)
+    endif()
   endif(Fortran_Works)
 
   option(DUNE_USE_ONLY_STATIC_LIBS "If set to ON, we will force static linkage everywhere" OFF)
@@ -587,14 +607,6 @@ macro(dune_project)
   include(CheckCXX11Features)
 
   include(DuneCxaDemangle)
-
-  # search for headers
-  include(CheckIncludeFile)
-  include(CheckIncludeFileCXX)
-  check_include_file("malloc.h" HAVE_MALLOC_H)
-  check_include_file("stdint.h" HAVE_STDINT_H)
-  check_include_file_cxx("memory" HAVE_MEMORY)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -DHAVE_MEMORY=${HAVE_MEMORY}")
 
   # set include path and link path for the current project.
   include_directories("${CMAKE_BINARY_DIR}")
@@ -656,6 +668,14 @@ macro(dune_project)
   # set up make headercheck
   include(Headercheck)
   setup_headercheck()
+
+  # check whether the user wants to append compile flags upon calling make
+  if(ALLOW_EXTRA_CXXFLAGS AND (${CMAKE_GENERATOR} MATCHES ".*Unix Makefiles.*"))
+    file(WRITE ${CMAKE_BINARY_DIR}/compiler.sh
+         "#!/bin/bash\nif [ -n \"$VERBOSE\" ] ; then\necho 1>&2 \"Additional flags: \$EXTRA_CXXFLAGS\"\nfi\nexec ${CMAKE_CXX_COMPILER} \"\$@\" \$EXTRA_CXXFLAGS")
+    exec_program(chmod ARGS "+x ${CMAKE_BINARY_DIR}/compiler.sh")
+    set(CMAKE_CXX_COMPILER ${CMAKE_BINARY_DIR}/compiler.sh)
+  endif()
 endmacro(dune_project)
 
 # create a new config.h file and overwrite the existing one
@@ -707,6 +727,10 @@ endmacro(dune_regenerate_config_cmake)
 # Namely it creates config.h and the cmake-config files,
 # some install directives and exports the module.
 macro(finalize_dune_project)
+  if(DUNE_SYMLINK_TO_SOURCE_TREE)
+    dune_symlink_to_source_tree()
+  endif()
+
   #configure all headerchecks
   finalize_headercheck()
 
@@ -715,31 +739,39 @@ macro(finalize_dune_project)
   include(GNUInstallDirs)
   set(DOXYSTYLE_DIR ${CMAKE_INSTALL_DATAROOTDIR}/dune-common/doc/doxygen/)
   set(SCRIPT_DIR ${CMAKE_INSTALL_DATAROOTDIR}/dune/cmake/scripts)
+  # Set the location where the doc sources are installed.
+  # Needed by custom package configuration
+  # file section of dune-grid.
+  set(DUNE_MODULE_SRC_DOCDIR "\${${ProjectName}_PREFIX}/${CMAKE_INSTALL_DOCDIR}")
 
   if(NOT EXISTS ${PROJECT_SOURCE_DIR}/cmake/pkg/${ProjectName}-config.cmake.in)
     # Generate a standard cmake package configuration file
     file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/${ProjectName}-config.cmake.in
-"if(NOT @ProjectName@_FOUND)
+"if(NOT ${ProjectName}_FOUND)
 @PACKAGE_INIT@
 
 #report other information
-set_and_check(@ProjectName@_PREFIX \"\${PACKAGE_PREFIX_DIR}\")
-set_and_check(@ProjectName@_INCLUDE_DIRS \"@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@\")
-set(@ProjectName@_CXX_FLAGS \"@CMAKE_CXX_FLAGS@\")
-set(@ProjectName@_CXX_FLAGS_DEBUG \"@CMAKE_CXX_FLAGS_DEBUG@\")
-set(@ProjectName@_CXX_FLAGS_MINSIZEREL \"@CMAKE_CXX_FLAGS_MINSIZEREL@\")
-set(@ProjectName@_CXX_FLAGS_RELEASE \"@CMAKE_CXX_FLAGS_RELEASE@\")
-set(@ProjectName@_CXX_FLAGS_RELWITHDEBINFO \"@CMAKE_CXX_FLAGS_RELWITHDEBINFO@\")
-set(@ProjectName@_DEPENDS \"@@ProjectName@_DEPENDS@\")
-set(@ProjectName@_SUGGESTS \"@@ProjectName@_SUGGESTS@\")
-set(@ProjectName@_MODULE_PATH \"@PACKAGE_DUNE_INSTALL_MODULEDIR@\")
-set(@ProjectName@_LIBRARIES \"@DUNE_MODULE_LIBRARIES@\")
+set_and_check(${ProjectName}_PREFIX \"\${PACKAGE_PREFIX_DIR}\")
+set_and_check(${ProjectName}_INCLUDE_DIRS \"@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@\")
+set(${ProjectName}_CXX_FLAGS \"${CMAKE_CXX_FLAGS}\")
+set(${ProjectName}_CXX_FLAGS_DEBUG \"${CMAKE_CXX_FLAGS_DEBUG}\")
+set(${ProjectName}_CXX_FLAGS_MINSIZEREL \"${CMAKE_CXX_FLAGS_MINSIZEREL}\")
+set(${ProjectName}_CXX_FLAGS_RELEASE \"${CMAKE_CXX_FLAGS_RELEASE}\")
+set(${ProjectName}_CXX_FLAGS_RELWITHDEBINFO \"${CMAKE_CXX_FLAGS_RELWITHDEBINFO}\")
+set(${ProjectName}_DEPENDS \"@${ProjectName}_DEPENDS@\")
+set(${ProjectName}_SUGGESTS \"@${ProjectName}_SUGGESTS@\")
+set(${ProjectName}_MODULE_PATH \"@PACKAGE_DUNE_INSTALL_MODULEDIR@\")
+set(${ProjectName}_LIBRARIES \"@DUNE_MODULE_LIBRARIES@\")
+
+# Lines that are set by the CMake buildsystem via the variable DUNE_CUSTOM_PKG_CONFIG_SECTION
+${DUNE_CUSTOM_PKG_CONFIG_SECTION}
+
 #import the target
-if(@ProjectName@_LIBRARIES)
+if(${ProjectName}_LIBRARIES)
   get_filename_component(_dir \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
-  include(\"\${_dir}/@ProjectName@-targets.cmake\")
-endif(@ProjectName@_LIBRARIES)
-endif(NOT @ProjectName@_FOUND)")
+  include(\"\${_dir}/${ProjectName}-targets.cmake\")
+endif(${ProjectName}_LIBRARIES)
+endif(NOT ${ProjectName}_FOUND)")
       set(CONFIG_SOURCE_FILE ${PROJECT_BINARY_DIR}/CMakeFiles/${ProjectName}-config.cmake.in)
   else(NOT EXISTS ${PROJECT_SOURCE_DIR}/cmake/pkg/${ProjectName}-config.cmake.in)
     set(CONFIG_SOURCE_FILE ${PROJECT_SOURCE_DIR}/cmake/pkg/${ProjectName}-config.cmake.in)
@@ -757,6 +789,10 @@ endif(NOT @ProjectName@_FOUND)")
   else(DUNE_MODULE_LIBRARIES)
     set(DUNE_INSTALL_LIBDIR ${DUNE_INSTALL_NONOBJECTLIBDIR})
   endif(DUNE_MODULE_LIBRARIES)
+
+  # Set the location of the doc file source. Needed by custom package configuration
+  # file section of dune-grid.
+  set(DUNE_MODULE_SRC_DOCDIR "${PROJECT_SOURCE_DIR}/doc")
 
   configure_package_config_file(${CONFIG_SOURCE_FILE}
     ${PROJECT_BINARY_DIR}/cmake/pkg/${ProjectName}-config.cmake
@@ -786,12 +822,12 @@ endmacro()")
 
   if(NOT EXISTS ${PROJECT_SOURCE_DIR}/${ProjectName}-config-version.cmake.in)
     file(WRITE ${PROJECT_BINARY_DIR}/CMakeFiles/${ProjectName}-config-version.cmake.in
-"set(PACKAGE_VERSION \"@ProjectVersionString@\")
+"set(PACKAGE_VERSION \"${ProjectVersionString}\")
 
-if(\"\${PACKAGE_FIND_VERSION_MAJOR}\" EQUAL \"@ProjectVersionMajor@\" AND
-     \"\${PACKAGE_FIND_VERSION_MINOR}\" EQUAL \"@ProjectVersionMinor@\")
+if(\"\${PACKAGE_FIND_VERSION_MAJOR}\" EQUAL \"${ProjectVersionMajor}\" AND
+     \"\${PACKAGE_FIND_VERSION_MINOR}\" EQUAL \"${ProjectVersionMinor}\")
   set (PACKAGE_VERSION_COMPATIBLE 1) # compatible with newer
-  if (\"\${PACKAGE_FIND_VERSION}\" VERSION_EQUAL \"@ProjectVersionString@\")
+  if (\"\${PACKAGE_FIND_VERSION}\" VERSION_EQUAL \"${ProjectVersionString}\")
     set(PACKAGE_VERSION_EXACT 1) #exact match for this version
   endif()
 endif()
@@ -931,10 +967,10 @@ macro(dune_add_library basename)
     set_property(GLOBAL PROPERTY DUNE_MODULE_LIBRARIES ${_prop} ${basename})
     # link with specified libraries.
     if(DUNE_LIB_ADD_LIBS)
-      dune_target_link_libraries(${basename} ${DUNE_LIB_ADD_LIBS})
+      dune_target_link_libraries(${basename} "${DUNE_LIB_ADD_LIBS}")
     endif(DUNE_LIB_ADD_LIBS)
     if(DUNE_LIB_COMPILE_FLAGS)
-      setproperty(${basename} APPEND_STRING COMPILE_FLAGS
+      set_property(${basename} APPEND_STRING COMPILE_FLAGS
         "${DUNE_LIB_COMPILE_FLAGS}")
     endif(DUNE_LIB_COMPILE_FLAGS)
     # Build library in ${PROJECT_BINARY_DIR}/lib
@@ -955,10 +991,10 @@ macro(dune_add_library basename)
         list(APPEND _created_libs ${basename}-static)
         # link with specified libraries.
         if(DUNE_LIB_ADD_LIBS)
-          dune_target_link_libraries(${basename}-static ${DUNE_LIB_ADD_LIBS})
+          dune_target_link_libraries(${basename}-static "${DUNE_LIB_ADD_LIBS}")
         endif(DUNE_LIB_ADD_LIBS)
         if(DUNE_LIB_COMPILE_FLAGS)
-          setproperty(${basename}-static APPEND_STRING COMPILE_FLAGS
+          set_property(${basename}-static APPEND_STRING COMPILE_FLAGS
             "${DUNE_LIB_COMPILE_FLAGS}")
         endif(DUNE_LIB_COMPILE_FLAGS)
       else(BUILD_SHARED_LIBS)
@@ -969,10 +1005,10 @@ macro(dune_add_library basename)
           LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
         # link with specified libraries.
         if(DUNE_LIB_ADD_LIBS)
-          dune_target_link_libraries(${basename}-shared ${DUNE_LIB_ADD_LIBS})
+          dune_target_link_libraries(${basename}-shared "${DUNE_LIB_ADD_LIBS}")
         endif(DUNE_LIB_ADD_LIBS)
         if(DUNE_LIB_COMPILE_FLAGS)
-          setproperty(${basename}-shared APPEND_STRING COMPILE_FLAGS
+          set_property(${basename}-shared APPEND_STRING COMPILE_FLAGS
             "${DUNE_LIB_COMPILE_FLAGS}")
         endif(DUNE_LIB_COMPILE_FLAGS)
         list(APPEND _created_libs ${basename}-shared)
@@ -1128,14 +1164,12 @@ and a replacement string. ${REPLACE_UNPARSED_ARGUMENTS}")
 endfunction(replace_properties)
 
 macro(add_dune_all_flags targets)
-  get_property(flags GLOBAL PROPERTY ALL_PKG_FLAGS)
-  set(FLAGSTR "")
-  foreach(flag ${flags})
-    set(FLAGSTR "${FLAGSTR}\ ${flag}")
-  endforeach()
+  get_property(incs GLOBAL PROPERTY ALL_PKG_INCS)
+  get_property(defs GLOBAL PROPERTY ALL_PKG_DEFS)
+  get_property(libs GLOBAL PROPERTY ALL_PKG_LIBS)
   foreach(target ${targets})
-    set_property(TARGET ${target}
-          APPEND_STRING
-          PROPERTY COMPILE_FLAGS ${FLAGSTR})
+    set_property(TARGET ${target} APPEND PROPERTY INCLUDE_DIRECTORIES ${incs})
+    set_property(TARGET ${target} APPEND PROPERTY COMPILE_DEFINITIONS ${defs})
+    target_link_libraries(${target} ${DUNE_LIBS} ${libs})
   endforeach()
 endmacro(add_dune_all_flags targets)

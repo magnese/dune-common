@@ -1,11 +1,11 @@
 # -*- tab-width: 4; indent-tabs-mode: nil -*-
-# $Id$
 
 TESTPROGS = \
     arraylisttest \
     arraytest \
     bigunsignedinttest \
     bitsetvectortest \
+    calloncetest \
     check_fvector_size \
     conversiontest \
     diagonalmatrixtest \
@@ -13,10 +13,10 @@ TESTPROGS = \
     dynvectortest \
     eigenvaluestest \
     enumsettest \
-    fassigntest \
     fmatrixtest \
     fvectortest \
     gcdlcmtest \
+    integersequence \
     iteratorfacadetest \
     iteratorfacadetest2 \
     lrutest \
@@ -26,30 +26,21 @@ TESTPROGS = \
     mpihelpertest2 \
     nullptr-test \
     pathtest \
+    parametertreelocaletest \
     parametertreetest \
     poolallocatortest \
     shared_ptrtest_config \
     singletontest \
     streamtest \
+    stringutilitytest \
     testdebugallocator \
     testdebugallocator_fail1 \
     testdebugallocator_fail2 \
     testdebugallocator_fail3 \
     testdebugallocator_fail4 \
     testdebugallocator_fail5 \
-    testfassign1 \
-    testfassign2 \
-    testfassign3 \
-    testfassign4 \
-    testfassign_fail1 \
-    testfassign_fail2 \
-    testfassign_fail3 \
-    testfassign_fail4 \
-    testfassign_fail5 \
-    testfassign_fail6 \
-    testfconstruct \
     testfloatcmp \
-    tuplestest_std \
+    tuplestest \
     tupleutilitytest \
     typetraitstest \
     utilitytest
@@ -61,9 +52,7 @@ COMPILE_XFAIL_TESTS = \
     check_fvector_size_fail1 \
     check_fvector_size_fail2 \
     genericiterator_compile_fail \
-    nullptr-test-fail \
-    testfconstruct_fail1 \
-    testfconstruct_fail2
+    nullptr-test-fail
 
 compile_XFAIL:
 	for i in $(COMPILE_XFAIL_TESTS); do \
@@ -83,13 +72,7 @@ XFAIL_TESTS = \
     testdebugallocator_fail2 \
     testdebugallocator_fail3 \
     testdebugallocator_fail4 \
-    testdebugallocator_fail5 \
-    testfassign_fail1 \
-    testfassign_fail2 \
-    testfassign_fail3 \
-    testfassign_fail4 \
-    testfassign_fail5 \
-    testfassign_fail6
+    testdebugallocator_fail5
 
 # programs just to build when "make check" is used
 check_PROGRAMS = $(TESTPROGS)
@@ -106,9 +89,11 @@ arraylisttest_SOURCES = arraylisttest.cc
 arraytest_SOURCES = arraytest.cc
 
 bigunsignedinttest_SOURCES=bigunsignedinttest.cc
-bigunsignedinttest_CPPFLAGS = $(AM_CPPFLAGS) $(BOOST_CPPFLAGS)
+bigunsignedinttest_CPPFLAGS = $(AM_CPPFLAGS)
 
 bitsetvectortest_SOURCES = bitsetvectortest.cc
+
+calloncetest_SOURCES = calloncetest.cc
 
 check_fvector_size_fail1_SOURCES = check_fvector_size_fail.cc
 check_fvector_size_fail1_CPPFLAGS = $(AM_CPPFLAGS) -DDIM=1
@@ -131,8 +116,6 @@ eigenvaluestest_LDADD = $(LAPACK_LIBS) $(LDADD) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 
 enumsettest_SOURCES = enumsettest.cc
 
-fassigntest_SOURCES = fassigntest.cc
-
 fmatrixtest_SOURCES = fmatrixtest.cc
 fmatrixtest_LDADD = $(LAPACK_LIBS) $(LDADD) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 
@@ -141,6 +124,9 @@ fvectortest_SOURCES = fvectortest.cc
 gcdlcmtest_SOURCES = gcdlcmtest.cc
 
 genericiterator_compile_fail_SOURCES = genericiterator_compile_fail.cc
+
+integersequence_SOURCES = integersequence.cc
+integersequence_CPPFLAGS = $(AM_CPPFLAGS)
 
 # mention headers so that they are distributed too
 iteratorfacadetest_SOURCES = iteratorfacadetest.cc iteratorfacadetest.hh \
@@ -174,6 +160,7 @@ nullptr_test_SOURCES = nullptr-test.cc nullptr-test2.cc
 nullptr_test_fail_SOURCES = nullptr-test.cc
 nullptr_test_fail_CPPFLAGS = $(AM_CPPFLAGS) -DFAIL
 
+parametertreelocaletest_SOURCES = parametertreelocaletest.cc
 parametertreetest_SOURCES = parametertreetest.cc
 
 pathtest_SOURCES = pathtest.cc
@@ -189,6 +176,8 @@ sllisttest_SOURCES = sllisttest.cc
 sourcescheck_NOSOURCES = timing.cc
 
 streamtest_SOURCES = streamtest.cc
+
+stringutilitytest_SOURCES = stringutilitytest.cc
 
 testdebugallocator_SOURCES = testdebugallocator.cc
 testdebugallocator_CPPFLAGS = $(AM_CPPFLAGS)
@@ -208,48 +197,9 @@ testdebugallocator_fail4_CPPFLAGS = $(AM_CPPFLAGS) -DFAILURE4 -DDEBUG_ALLOCATOR_
 testdebugallocator_fail5_SOURCES = testdebugallocator.cc
 testdebugallocator_fail5_CPPFLAGS = $(AM_CPPFLAGS) -DFAILURE5
 
-testfassign1_SOURCES = testfassign.cc testfassign2.cc
-testfassign1_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=3 -D_VALUES="1,2,3"
-
-testfassign2_SOURCES = testfassign.cc
-testfassign2_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=3 -D_VALUES="1,zero"
-
-testfassign3_SOURCES = testfassign.cc
-testfassign3_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=3 -D_VALUES="zero"
-
-testfassign4_SOURCES = testfassign.cc
-testfassign4_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=2 -D_DUNE_TEST_M=3 -D_VALUES="1,zero,nextRow,2,3,4"
-
-testfassign_fail1_SOURCES = testfassign.cc
-testfassign_fail1_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=3 -D_VALUES="1,2"
-
-testfassign_fail2_SOURCES = testfassign.cc
-testfassign_fail2_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=3 -D_VALUES="1,2,3,4"
-
-testfassign_fail3_SOURCES = testfassign.cc
-testfassign_fail3_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=2 -D_DUNE_TEST_M=2 -D_VALUES="1,nextRow,2,3"
-
-testfassign_fail4_SOURCES = testfassign.cc
-testfassign_fail4_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=2 -D_DUNE_TEST_M=2 -D_VALUES="1,2,3,nextRow,2,3"
-
-testfassign_fail5_SOURCES = testfassign.cc
-testfassign_fail5_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=2 -D_DUNE_TEST_M=2 -D_VALUES="1,2"
-
-testfassign_fail6_SOURCES = testfassign.cc
-testfassign_fail6_CPPFLAGS = $(AM_CPPFLAGS) -D_DUNE_TEST_N=2 -D_DUNE_TEST_M=2 -D_VALUES="1,2,nextRow,2,3,nextRow,4,5"
-
-testfconstruct_SOURCES = testfconstruct.cc
-testfconstruct_CPPFLAGS = $(AM_CPPFLAGS) -DFVSIZE=3
-
-testfconstruct_fail1_SOURCES = testfconstruct.cc
-testfconstruct_fail1_CPPFLAGS = $(AM_CPPFLAGS) -DFVSIZE=2
-
-testfconstruct_fail2_SOURCES = testfconstruct.cc
-testfconstruct_fail2_CPPFLAGS = $(AM_CPPFLAGS) -DFVSIZE=5
-
 testfloatcmp_SOURCES = testfloatcmp.cc
 
-tuplestest_std_SOURCES = tuplestest.cc
+tuplestest_SOURCES = tuplestest.cc
 
 tupleutilitytest_SOURCES = tupleutilitytest.cc
 

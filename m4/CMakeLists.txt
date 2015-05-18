@@ -8,9 +8,12 @@ install(PROGRAMS
         ax_lang_compiler_ms.m4
         boost_fusion.m4
         cxx11_compiler.m4
+        cxx11_is_indexable_support.m4
         cxx0x_nullptr.m4
         cxx11_constexpr.m4
         cxx11_final.m4
+        cxx11_range_based_for.m4
+        cxx11_std_declval.m4
         dune.m4
         dune_all.m4
         dune_autobuild.m4
@@ -24,6 +27,7 @@ install(PROGRAMS
         dune_docu.m4
         dune_linkcxx.m4
         dune_mpi.m4
+        dune_stdthread.m4
         dune_streams.m4
         dune_unused.m4
         fortran_overwrite.m4

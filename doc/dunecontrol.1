@@ -32,8 +32,8 @@ contained in the main directory of a Dune module.
 
 The
 .B dunecontrol
-program helps to build sets of inter-dependent modules.  It allows to construct
-the entire dependency graph and obtain information about it.  Then it allows to give various build-related
+program helps to build sets of inter-dependent modules.  It allows one to construct
+the entire dependency graph and obtain information about it.  Then it allows one to give various build-related
 commands for all modules.  These are executed in the order mandated by the dependency graph.
 
 .SH COMMANDS
@@ -110,15 +110,19 @@ Show this help
 .HP
 \fB--debug\fP
 .IP
-Run with debuggin output enabled
+Run with debugging output enabled
 .HP
 \fB--use-cmake\fP
 .IP
 Use cmake instead of the AutoTools for building individual modules
 .HP
+\fB--no-cmake\fP
+.IP
+Use the AutoTools instead of cmake for building individual modules
+.HP
 \fB--module=\fP\fImod\fP
 .IP
-Only apply the actions on module
+Apply the actions on module
 .I mod
 and all modules it depends on
 .HP
@@ -131,6 +135,10 @@ Only apply the actions on module
 \fB--current\fP
 .IP
 Only apply the actions on the current module, the one whose source tree we are in
+.HP
+\fB--current-dep\fP
+.IP
+Apply the actions on the current module, and all modules it depends on
 .HP
 \fB--resume\fP
 .IP

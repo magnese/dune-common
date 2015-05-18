@@ -141,15 +141,17 @@ namespace Dune
   {
   public:
     //! Instantiation using a MPI communicator
-    CollectiveCommunication (const MPI_Comm& c) : comm_(c)
+    CollectiveCommunication (const MPI_Comm& c = MPI_COMM_WORLD)
+      : comm_(c)
     {
-      if(comm_!=MPI_COMM_NULL)
-      {
+      if(comm_!=MPI_COMM_NULL) {
+        int initialized = 0;
+        MPI_Initialized(&initialized);
+        if (!initialized)
+          DUNE_THROW(ParallelError,"You must call MPIHelper::instance(argc,argv) in your main() function before using the MPI CollectiveCommunication!");
         MPI_Comm_rank(comm_,&me);
         MPI_Comm_size(comm_,&procs);
-      }
-      else
-      {
+      }else{
         procs=0;
         me=-1;
       }

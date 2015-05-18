@@ -1,5 +1,3 @@
-# $Id$
-
 SUBDIRS = . test parallel std
 
 # the standard debug streams are put into the libdune
@@ -14,7 +12,8 @@ libcommon_la_SOURCES =				\
 	parametertreeparser.cc			\
 	path.cc					\
 	exceptions.cc				\
-	stdstreams.cc
+	stdstreams.cc				\
+	stdthread.cc
 libcommon_la_LIBADD = $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBS) $(FLIBS)
 
 commonincludedir = $(includedir)/dune/common
@@ -58,6 +57,7 @@ commoninclude_HEADERS = 			\
 	interfaces.hh				\
 	ios_state.hh				\
 	iteratorfacades.hh			\
+	iteratorrange.hh			\
 	lcm.hh					\
 	lru.hh					\
 	mallocallocator.hh			\
@@ -72,12 +72,14 @@ commoninclude_HEADERS = 			\
 	precision.hh				\
 	promotiontraits.hh			\
 	propertymap.hh				\
+        proxymemberaccess.hh                    \
 	reservedvector.hh			\
 	shared_ptr.hh				\
 	singleton.hh				\
 	sllist.hh				\
 	static_assert.hh			\
 	stdstreams.hh				\
+	stdthread.hh				\
 	stringutility.hh			\
 	timer.hh				\
 	tuples.hh				\
