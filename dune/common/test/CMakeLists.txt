@@ -98,6 +98,7 @@ target_link_libraries("testfloatcmp" "dunecommon")
 add_executable("fmatrixtest" fmatrixtest.cc dummy.f)
 target_link_libraries("fmatrixtest" "dunecommon")
 add_executable("fvectortest" fvectortest.cc)
+add_dune_gmp_flags("fvectortest")
 add_executable("gcdlcmtest" gcdlcmtest.cc)
 add_executable("genericiterator_compile_fail" EXCLUDE_FROM_ALL genericiterator_compile_fail.cc)
 add_executable("integersequence" integersequence.cc)
@@ -179,6 +180,7 @@ endforeach(_TEST)
 set_tests_properties(
   eigenvaluestest
   mpicollectivecommunication
+  parametertreelocaletest
   PROPERTIES SKIP_RETURN_CODE 77)
 
 # set properties for failing tests
