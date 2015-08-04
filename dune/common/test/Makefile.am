@@ -7,6 +7,7 @@ TESTPROGS = \
     bitsetvectortest \
     calloncetest \
     check_fvector_size \
+    classnametest \
     conversiontest \
     diagonalmatrixtest \
     dynmatrixtest \
@@ -43,6 +44,7 @@ TESTPROGS = \
     tuplestest \
     tupleutilitytest \
     typetraitstest \
+    typetraitstest_deprecated \
     utilitytest
 
 # which tests to run
@@ -102,6 +104,8 @@ check_fvector_size_fail2_SOURCES = check_fvector_size_fail.cc
 check_fvector_size_fail2_CPPFLAGS = $(AM_CPPFLAGS) -DDIM=3
 
 check_fvector_size_SOURCES = check_fvector_size.cc
+
+classnametest_SOURCES = classnametest.cc
 
 conversiontest_SOURCES = conversiontest.cc
 
@@ -204,6 +208,8 @@ tuplestest_SOURCES = tuplestest.cc
 tupleutilitytest_SOURCES = tupleutilitytest.cc
 
 typetraitstest_SOURCES = typetraitstest.cc
+
+typetraitstest_deprecated_SOURCES = typetraitstest_deprecated.cc
 
 utilitytest_SOURCES = utilitytest.cc
 

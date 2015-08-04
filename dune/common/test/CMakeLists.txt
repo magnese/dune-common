@@ -6,11 +6,11 @@ set(TESTS
     bitsetvectortest
     calloncetest
     check_fvector_size
+    classnametest
     conversiontest
     diagonalmatrixtest
     dynmatrixtest
     dynvectortest
-    eigenvaluestest
     enumsettest
     fmatrixtest
     fvectortest
@@ -35,6 +35,8 @@ set(TESTS
     testfloatcmp
     tuplestest
     tupleutilitytest
+    typetraitstest
+    typetraitstest_deprecated
     utilitytest)
 
 #test that should build but fail to run successfully
@@ -52,13 +54,6 @@ set(COMPILEFAILTESTS
     genericiterator_compile_fail
     nullptr-test-fail)
 
-set(TESTPROGS ${TESTS} ${FAILTESTS})
-
-# We do not want want to build the tests during make all,
-# but just build them on demand
-add_directory_test_target(_test_target)
-add_dependencies(${_test_target} ${TESTPROGS})
-
 # Add the executables needed for the tests
 add_executable("arraylisttest" arraylisttest.cc)
 add_executable("arraytest" arraytest.cc)
@@ -74,6 +69,7 @@ add_executable("check_fvector_size_fail1" EXCLUDE_FROM_ALL check_fvector_size_fa
 set_target_properties(check_fvector_size_fail1 PROPERTIES COMPILE_FLAGS "-DDIM=1")
 add_executable("check_fvector_size_fail2" EXCLUDE_FROM_ALL check_fvector_size_fail.cc)
 set_target_properties(check_fvector_size_fail2 PROPERTIES COMPILE_FLAGS "-DDIM=3")
+add_executable("classnametest" classnametest.cc)
 add_executable("conversiontest" conversiontest.cc)
 
 add_executable("dynmatrixtest" dynmatrixtest.cc)
@@ -81,9 +77,12 @@ target_link_libraries("dynmatrixtest" "dunecommon")
 
 add_executable("dynvectortest" dynvectortest.cc)
 
-add_executable("eigenvaluestest" eigenvaluestest.cc)
-target_link_libraries(eigenvaluestest dunecommon)
-target_link_libraries(eigenvaluestest ${LAPACK_LIBRARIES})
+if(${LAPACK_FOUND})
+  add_executable(eigenvaluestest eigenvaluestest.cc)
+  target_link_libraries(eigenvaluestest dunecommon)
+  target_link_libraries(eigenvaluestest ${LAPACK_LIBRARIES})
+  list(APPEND TESTS eigenvaluestest)
+endif()
 
 add_executable("diagonalmatrixtest" diagonalmatrixtest.cc)
 target_link_libraries("diagonalmatrixtest" "dunecommon")
@@ -169,7 +168,16 @@ set_target_properties(testdebugallocator_fail5 PROPERTIES COMPILE_DEFINITIONS "F
 
 add_executable("tuplestest" tuplestest.cc)
 add_executable("tupleutilitytest" tupleutilitytest.cc)
+add_executable("typetraitstest" typetraitstest.cc)
+add_executable("typetraitstest_deprecated" typetraitstest_deprecated.cc)
 add_executable("utilitytest" utilitytest.cc)
+
+set(TESTPROGS ${TESTS} ${FAILTESTS})
+
+# We do not want want to build the tests during make all,
+# but just build them on demand
+add_directory_test_target(_test_target)
+add_dependencies(${_test_target} ${TESTPROGS})
 
 # Add the tests to be executed
 foreach(_TEST ${TESTPROGS})
@@ -178,10 +186,13 @@ endforeach(_TEST)
 
 # treat tests returning code 77 as skipped
 set_tests_properties(
-  eigenvaluestest
   mpicollectivecommunication
   parametertreelocaletest
   PROPERTIES SKIP_RETURN_CODE 77)
+if(${LAPACK_FOUND})
+  set_tests_properties(eigenvaluestest
+    PROPERTIES SKIP_RETURN_CODE 77)
+endif()
 
 # set properties for failing tests
 set_tests_properties(

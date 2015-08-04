@@ -588,7 +588,7 @@ namespace Dune {
   //! transform a tuple object into another tuple object
   /**
    * \code
-   * #include <dune/common/utility.hh>
+   * #include <dune/common/tupleutility.hh>
    * \endcode
    * This function does for the value of a tuple what ForEachType does for the
    * type of a tuple: it transforms the value using a user-provided policy
@@ -728,7 +728,7 @@ namespace Dune {
   //! syntactic sugar for creation of TransformTupleFunctor objects
   /**
    * \code
-   * #include <dune/common/utility.hh>
+   * #include <dune/common/tupleutility.hh>
    * \endcode
    * \tparam TE TypeEvaluator class template.
    * \tparam A0 Type of extra arguments to pass to \c TE<T>::apply().  It
@@ -1052,9 +1052,9 @@ namespace Dune {
   //! transform a tuple's value according to a user-supplied policy
   /**
    * \code
-   * #include <dune/common/utility.hh>
+   * #include <dune/common/tupleutility.hh>
    * \endcode
-   * This function provides functionality similiar to genericTransformTuple(),
+   * This function provides functionality similar to genericTransformTuple(),
    * although less general and closer in spirit to ForEachType.
    *
    * \tparam TypeEvaluator Used as the \c TE template argument to
