@@ -4,8 +4,7 @@ MODULES = \
   AddParMETISFlags.cmake   \
   AddPTScotchFlags.cmake   \
   AddUMFPackFlags.cmake    \
-  CheckCXX11Features.cmake \
-  DuneBoost.cmake \
+  CheckCXXFeatures.cmake   \
   DuneCMakePackageConfigHelpers.cmake \
   DuneCommonMacros.cmake  \
   DuneCxaDemangle.cmake   \
@@ -19,7 +18,6 @@ MODULES = \
   DuneSymlinkOrCopy.cmake \
   DuneTestMacros.cmake    \
   DuneTests.cmake         \
-  FindBoostFusion.cmake   \
   FindGMP.cmake           \
   FindInkscape.cmake      \
   FindMETIS.cmake         \

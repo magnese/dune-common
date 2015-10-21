@@ -26,22 +26,8 @@
 /* does the compiler support __attribute__((unused))? */
 #cmakedefine HAS_ATTRIBUTE_UNUSED 1
 
-/* old feature support macros which were tested until 2.3, keep around for one more release */
-/* As these are now always supported due to the new compiler requirements, they are directly */
-/* defined without an explicit test. */
-#define HAVE_INTEGRAL_CONSTANT 1
-#define HAVE_DUNE_HASH 1
-#define HAVE_STD_HASH 1
-#define HAVE_TYPE_TRAITS 1
-#define HAVE_VARIADIC_TEMPLATES  1
-#define HAVE_VARIADIC_CONSTRUCTOR_SFINAE 1
-#define HAVE_RVALUE_REFERENCES 1
-
 /* Define if you have a BLAS library. */
 #cmakedefine HAVE_BLAS 1
-
-/* Define to ENABLE_BOOST if the Boost library is available */
-#cmakedefine HAVE_DUNE_BOOST ENABLE_BOOST
 
 /* does the compiler support abi::__cxa_demangle */
 #cmakedefine HAVE_CXA_DEMANGLE 1
@@ -63,9 +49,6 @@
 
 /* Define to 1 if you have the symbol mprotect. */
 #cmakedefine HAVE_MPROTECT 1
-
-/* Define to 1 if nullptr is supported */
-#cmakedefine HAVE_NULLPTR 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H 1
@@ -104,23 +87,18 @@
 
 /* end private */
 
-/* Define to 1 if C++11 constexpr is supported */
-#cmakedefine HAVE_CONSTEXPR 1
-
-/* Define to 1 if C++11 range-based for is supported */
-#cmakedefine HAVE_RANGE_BASED_FOR 1
-
-/* Define to 1 if C++11 nonexcept specifier is supported */
-#cmakedefine HAVE_NOEXCEPT_SPECIFIER 1
-
-/* Define to 1 if C++11 std::declval() is supported */
-#cmakedefine HAVE_STD_DECLVAL 1
+/* old feature support macros which were tested until 2.4, kept around for one more release */
+/* As these are now always supported due to the new compiler requirements, they are directly */
+/* defined without an explicit test. */
+#define HAVE_NULLPTR 1
+#define HAVE_CONSTEXPR 1
+#define HAVE_RANGE_BASED_FOR 1
+#define HAVE_NOEXCEPT_SPECIFIER 1
+#define HAVE_STD_DECLVAL 1
+#define HAVE_KEYWORD_FINAL 1
 
 /* Define to 1 if the compiler properly supports testing for operator[] */
 #cmakedefine HAVE_IS_INDEXABLE_SUPPORT 1
-
-/* does the compiler support the keyword 'final'? */
-#cmakedefine HAVE_KEYWORD_FINAL 1
 
 /* Define to if the UMFPack library is available */
 #cmakedefine HAVE_UMFPACK ENABLE_UMFPACK

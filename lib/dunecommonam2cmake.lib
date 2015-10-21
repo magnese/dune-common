@@ -17,7 +17,7 @@ dune_common_options_am2cmake()
     # to lower case are used for configures
     # --with-<package> or without-<package> options
     #
-    CMAKE_PACKAGES="Boost Inkscape GMP LAPACK UMFPack"
+    CMAKE_PACKAGES="Inkscape GMP LAPACK UMFPack"
 
     default_am2cmake_options $CMAKE_PACKAGES
 
@@ -25,6 +25,8 @@ dune_common_options_am2cmake()
     echo $PARAMS | grep \\-\\-disable-parallel > /dev/null
     if test "$?" -eq 0 ; then
         CMAKE_PARAMS="$CMAKE_PARAMS -DCMAKE_DISABLE_FIND_PACKAGE_MPI=TRUE"
+    else
+        CMAKE_PARAMS="$CMAKE_PARAMS -DCMAKE_DISABLE_FIND_PACKAGE_MPI=FALSE"
     fi
 
     # Check for --disable-cxx11check

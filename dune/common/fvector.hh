@@ -105,7 +105,7 @@ namespace Dune {
     typedef typename Base::value_type value_type;
 
     //! Constructor making default-initialized vector
-    FieldVector()
+    DUNE_CONSTEXPR FieldVector()
       : _data{}
     {}
 
@@ -224,7 +224,7 @@ namespace Dune {
     //===== construction
 
     /** \brief Default constructor */
-    FieldVector ()
+    DUNE_CONSTEXPR FieldVector ()
       : _data()
     {}
 
@@ -272,11 +272,13 @@ namespace Dune {
     DUNE_CONSTEXPR size_type vec_size () const { return 1; }
     K & vec_access(size_type i)
     {
+      DUNE_UNUSED_PARAMETER(i);
       assert(i == 0);
       return _data;
     }
     const K & vec_access(size_type i) const
     {
+      DUNE_UNUSED_PARAMETER(i);
       assert(i == 0);
       return _data;
     }

@@ -1,27 +1,54 @@
-# Module that checks whether PT-Scotch is available.
+# .. cmake_module::
 #
-# Accepts the following variables:
+#    Module that checks whether PT-Scotch is available.
 #
-# PTSCOTCH_ROOT:   Prefix where PT-Scotch is installed.
-# PTSCOTCH_SUFFIX: Scotch might be compiled using different
-#                  integer sizes (int32, int64, long). When
-#                  this is is set the headers and libaries
-#                  are search under the suffix
-#                  include/scotch-${PTSCOTCH_SUFFIX}, and
-#                  lib/scotch-${PTSCOTCH_SUFFIX}, respectively.
-# Sets the following variables:
-# PTSCOTCH_INCLUDE_DIRS: All include directories needed to compile PT-Scotch programs.
-# PTSCOTCH_LIBRARIES:    Alle libraries needed to link PT-Scotch programs.
-# PTSCOTCH_FOUND:        True if PT-Scotch was found.
+#    You may set the following variables to customize this modules behaviour:
 #
-# Provides the following macros:
+#    :ref:`PTSCOTCH_ROOT`
+#       Prefix where PT-Scotch is installed.
 #
-# find_package(PTScotch)
+#    :ref:`PTSCOTCH_SUFFIX`
+#       Scotch might be compiled using different
+#       integer sizes (int32, int64, long). When
+#       this is is set the headers and libaries
+#       are search under the suffix
+#       :code:`include/scotch-${PTSCOTCH_SUFFIX}`, and
+#       :code:`lib/scotch-${PTSCOTCH_SUFFIX}`, respectively.
+#
+#    This module sets the following variables:
+#
+#    :code:`PTSCOTCH_FOUND`
+#       True if PT-Scotch was found.
+#
+#    :code:`PTSCOTCH_INCLUDE_DIRS`
+#       All include directories needed to compile PT-Scotch programs.
+#
+#    :code:`PTSCOTCH_LIBRARIES`
+#       All libraries needed to link PT-Scotch programs.
+#
+#    :code:`PTSCOTCH_FOUND`
+#       True if PT-Scotch was found.
+#
+# .. cmake_variable:: PTSCOTCH_ROOT
+#
+#   You may set this variable to have :ref:`FindPTScotch` look
+#   for the PTScotch package in the given path before inspecting
+#   system paths.
+#
+# .. cmake_variable:: PTSCOTCH_SUFFIX
+#
+#   PTScotch might be compiled using different
+#   integer sizes (int32, int64, long). When
+#   this is is set the headers and libaries
+#   are search under the suffix
+#   :code:`include/scotch-${PTSCOTCH_SUFFIX}`, and
+#   :code:`lib/scotch-${PTSCOTCH_SUFFIX}`, respectively.
+#
 
 include(DuneMPI)
 macro(_search_pt_lib libvar libname doc)
   find_library(${libvar} ${libname}
-    PATHS ${PTSCOTCH_ROOT} PATH_SUFFIXES ${PATH_SUFFIXES}
+    PATHS ${PTSCOTCH_ROOT} ${PTSCOTCH_ROOT}/lib PATH_SUFFIXES ${PATH_SUFFIXES}
     NO_DEFAULT_PATH
     DOC "${doc}")
   find_library(${libvar} ${libname})
@@ -39,7 +66,7 @@ set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES} ${MPI_DUNE_INCLUDE_PATH})
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${MPI_DUNE_COMPILE_FLAGS}")
 
 find_path(PTSCOTCH_INCLUDE_DIR ptscotch.h
-  PATHS ${PTSCOTCH_ROOT}
+  PATHS ${PTSCOTCH_ROOT} ${PTSCOTCH_ROOT}/include
   PATH_SUFFIXES ${PATH_SUFFIXES}
   NO_DEFAULT_PATH
   DOC "Include directory of PT-Scotch")
@@ -47,6 +74,7 @@ find_path(PTSCOTCH_INCLUDE_DIR ptscotch.h
   PATH_SUFFIXES ${PATH_SUFFIXES})
 
 _search_pt_lib(PTSCOTCH_LIBRARY ptscotch "The main PT-Scotch library.")
+_search_pt_lib(SCOTCH_LIBRARY scotch "The Scotch library.")
 _search_pt_lib(PTSCOTCHERR_LIBRARY ptscotcherr "The PT-Scotch error library.")
 
 # behave like a CMake module is supposed to behave
@@ -56,6 +84,7 @@ find_package_handle_standard_args(
   DEFAULT_MSG
   PTSCOTCH_INCLUDE_DIR
   PTSCOTCH_LIBRARY
+  SCOTCH_LIBRARY
   PTSCOTCHERR_LIBRARY
 )
 #restore old values
@@ -63,7 +92,7 @@ cmake_pop_check_state()
 
 if(PTSCOTCH_FOUND)
   set(PTSCOTCH_INCLUDE_DIRS ${PTSCOTCH_INCLUDE_DIR})
-  set(PTSCOTCH_LIBRARIES ${PTSCOTCH_LIBRARY} ${PTSCOTCHERR_LIBRARY} ${MPI_DUNE_LIBRARIES}
+  set(PTSCOTCH_LIBRARIES ${PTSCOTCH_LIBRARY} ${SCOTCH_LIBRARY} ${PTSCOTCHERR_LIBRARY} ${MPI_DUNE_LIBRARIES}
     CACHE FILEPATH "All libraries needed to link programs using PT-Scotch")
   set(PTSCOCH_LINK_FLAGS "${DUNE_MPI_LINK_FLAGS}"
     CACHE STRING "PT-Scotch link flags")

@@ -1,11 +1,12 @@
-set(modules
+install(FILES
   AddGMPFlags.cmake
   AddMETISFlags.cmake
   AddParMETISFlags.cmake
   AddPTScotchFlags.cmake
   AddUMFPackFlags.cmake
-  CheckCXX11Features.cmake
-  DuneBoost.cmake
+  CheckCXXFeatures.cmake
+  CheckForPthreads.c
+  CMakeBuiltinFunctionsDocumentation.cmake
   DuneCMakePackageConfigHelpers.cmake
   DuneCommonMacros.cmake
   DuneCxaDemangle.cmake
@@ -15,25 +16,23 @@ set(modules
   DuneMacros.cmake
   DuneMPI.cmake
   DunePkgConfig.cmake
+  DuneSphinxCMakeDoc.cmake
   DuneStreams.cmake
   DuneSymlinkOrCopy.cmake
   DuneTestMacros.cmake
   DuneTests.cmake
-  FindBoostFusion.cmake
   FindGMP.cmake
   FindInkscape.cmake
   FindMETIS.cmake
   FindMProtect.cmake
   FindParMETIS.cmake
   FindPTScotch.cmake
+  FindSphinx.cmake
   FindThreadsCMake31.cmake
   FindUMFPack.cmake
   Headercheck.cmake
   LanguageSupport.cmake
   OverloadCompilerFlags.cmake
   UseInkscape.cmake
-  UseLATEX.cmake)
-set(test_programs CheckForPthreads.c)
-install(FILES ${modules}
-              ${test_programs}
-        DESTINATION ${DUNE_INSTALL_MODULEDIR})
+  UseLATEX.cmake
+  DESTINATION ${DUNE_INSTALL_MODULEDIR})
